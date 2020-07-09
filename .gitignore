@@ -1,0 +1,12 @@
+node_modules
+.DS_Store
+Thumbs.db
+npm-debug.log
+*.map
+*.d.ts
+*.js
+*.tgz
+.idea
+package-lock.json
+*.sublime-workspace
+/dist

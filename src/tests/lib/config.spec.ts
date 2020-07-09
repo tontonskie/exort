@@ -1,0 +1,6 @@
+describe('config', () => {
+
+  describe('Configuration', () => {
+
+  });
+});

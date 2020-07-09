@@ -1,0 +1,70 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "files.insertFinalNewline": true,
+    "files.exclude": {
+      "**/.git": true,
+      "**/__pycache__": true,
+      "**/.svn": true,
+      "**/.hg": true,
+      "**/CVS": true,
+      "**/.DS_Store": true,
+      "**/*.sublime-workspace": true,
+      "**/*.pyc": true,
+      "dist": true,
+      "node_modules": true,
+      "cli": true,
+      "start": true,
+      ".venv": true,
+      "venv": true,
+      ".vscode/tags": true,
+      "uploads": true,
+      ".static": true,
+      "**/*.mo": true,
+      "**/*.pot": true
+    },
+    "editor.rulers": [150],
+    "files.eol": "\n",
+    "files.trimTrailingWhitespace": true,
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "[typescript]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[markdown]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[javascript]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[json]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[html]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[css]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[scss]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[less]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+    "[php]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 4
+    },
+    "[python]": {
+      "editor.insertSpaces": true,
+      "editor.tabSize": 4
+    },
+    "search.useIgnoreFiles": false
+  }
