@@ -1,3 +1,5 @@
+import { KeyValuePair, setClassMetadata, getClassMetadata } from '../metadata';
+
 export interface HttpConfig {
   port: number;
   hostname: string;
@@ -49,50 +51,150 @@ export abstract class HttpServer {
   abstract options(path: string | RegExp, handler: RequestHandler): void;
 }
 
-export function Controller() {
+export enum ActionHttpMethod {
+  GET = 'GET',
+  POST = 'POST',
+  HEAD = 'HEAD',
+  DELETE = 'DELETE',
+  PUT = 'PUT',
+  PATCH = 'PATCH',
+  OPTIONS = 'OPTIONS'
+}
+
+export interface ActionDetails {
+  method: ActionHttpMethod;
+}
+
+export interface ControllerDetails {
+  name: string;
+  prefix?: string;
+  routes?: KeyValuePair<string>;
+  actions?: KeyValuePair<ActionDetails>;
+}
+
+function getDefaultControllerMetadata(controllerClass: Function): ControllerDetails {
+  return { name: controllerClass.name };
+}
+
+function addRouteMetadata(controllerClass: Function, path: string, actionName: string, details: ActionDetails) {
+  let metadata = getClassMetadata(controllerClass, 'controller') as ControllerDetails;
+  if (!metadata) {
+    metadata = getDefaultControllerMetadata(controllerClass);
+  }
+
+  metadata.routes = metadata.routes || {};
+  metadata.routes[path || ''] = actionName;
+
+  metadata.actions = metadata.actions || {};
+  metadata.actions[actionName] = details;
+
+  setClassMetadata(controllerClass, 'controller', metadata);
+}
+
+export function Controller(prefix?: string) {
   return (target: Function) => {
-    Reflect.defineMetadata('exort:classType', 'controller', target);
+    setClassMetadata(target, 'classType', 'controller');
+
+    let metadata = getClassMetadata(target, 'controller') as ControllerDetails;
+    if (!metadata) {
+      metadata = getDefaultControllerMetadata(target);
+    }
+
+    if (typeof prefix != 'undefined') {
+      metadata.prefix = prefix;
+    }
+
+    setClassMetadata(target, 'controller', metadata);
   };
 }
 
 export function Get(path?: string) {
   return (target: Object , propertyName: string, descriptor: PropertyDescriptor) => {
-
+    addRouteMetadata(
+      target.constructor,
+      path,
+      propertyName,
+      {
+        method: ActionHttpMethod.GET
+      }
+    );
   };
 }
 
 export function Post(path?: string) {
   return (target: Object , propertyName: string, descriptor: PropertyDescriptor) => {
-
+    addRouteMetadata(
+      target.constructor,
+      path,
+      propertyName,
+      {
+        method: ActionHttpMethod.POST
+      }
+    );
   };
 }
 
 export function Head(path?: string) {
   return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
-
+    addRouteMetadata(
+      target.constructor,
+      path,
+      propertyName,
+      {
+        method: ActionHttpMethod.HEAD
+      }
+    );
   };
 }
 
 export function Delete(path?: string) {
   return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
-
+    addRouteMetadata(
+      target.constructor,
+      path,
+      propertyName,
+      {
+        method: ActionHttpMethod.DELETE
+      }
+    );
   };
 }
 
 export function Put(path?: string) {
   return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
-
+    addRouteMetadata(
+      target.constructor,
+      path,
+      propertyName,
+      {
+        method: ActionHttpMethod.PUT
+      }
+    );
   };
 }
 
 export function Patch(path?: string) {
   return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
-
+    addRouteMetadata(
+      target.constructor,
+      path,
+      propertyName,
+      {
+        method: ActionHttpMethod.PATCH
+      }
+    );
   };
 }
 
 export function Options(path?: string) {
   return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
-
+    addRouteMetadata(
+      target.constructor,
+      path,
+      propertyName,
+      {
+        method: ActionHttpMethod.OPTIONS
+      }
+    );
   };
 }

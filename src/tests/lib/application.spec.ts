@@ -1,7 +1,6 @@
 import { Application } from '../../lib';
 import { ExpressServer } from '../../lib/http/express';
 import { expect } from '../utils';
-import { __makeTemplateObject } from 'tslib';
 
 describe('application', () => {
 

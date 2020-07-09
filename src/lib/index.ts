@@ -1,7 +1,9 @@
 import 'reflect-metadata';
 
+export * from './http/server';
 export * from './application';
 export * from './bootstrap';
-export * from './database';
-export * from './http/server';
 export * from './config';
+export * from './database';
+export * from './metadata';
+export * from './utils';
