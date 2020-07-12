@@ -1,4 +1,4 @@
-import { HttpServer } from '../../../lib';
+import { HttpServer, ActionHttpMethod } from '../../../lib';
 import { ExpressServer, Request, Response } from '../../../lib/http/express';
 import { expect, request } from '../../utils';
 
@@ -12,32 +12,10 @@ describe('http/express', () => {
     const server: ExpressServer = new ExpressServer(config);
 
     before(() => {
-      server.get('/', (request: Request, response: Response) => {
-        response.send('GET method');
-      });
-
-      server.post('/', (request: Request, response: Response) => {
-        response.send('POST method');
-      });
-
-      server.head('/', (request: Request, response: Response) => {
-        response.send('HEAD method');
-      });
-
-      server.delete('/', (request: Request, response: Response) => {
-        response.send('DELETE method');
-      });
-
-      server.put('/', (request: Request, response: Response) => {
-        response.send('PUT method');
-      });
-
-      server.patch('/', (request: Request, response: Response) => {
-        response.send('PATCH method');
-      });
-
-      server.options('/', (request: Request, response: Response) => {
-        response.send('OPTIONS method');
+      Object.values(ActionHttpMethod).forEach(httpMethod => {
+        server[`${httpMethod.toLowerCase()}`]('/', (request: Request, response: Response) => {
+          response.send(`${httpMethod} method`);
+        });
       });
     });
 
@@ -66,74 +44,24 @@ describe('http/express', () => {
       return expect(server.start()).to.eventually.rejectedWith(Error, `Can't call .start() twice. Http server is already running.`);
     });
 
-    it('GET method route "/"', done => {
-      request(server.getInstance())
-        .get('/')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.be.eql('GET method');
-          done();
-        });
-    });
+    Object.values(ActionHttpMethod).forEach(httpMethod => {
+      it(`${httpMethod} method on route "/" should match text and status code`, done => {
 
-    it('POST method on route "/"', done => {
-      request(server.getInstance())
-        .post('/')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.be.eql('POST method');
-          done();
-        });
-    });
+        request(server.getInstance())
+          [`${httpMethod.toLowerCase()}`]('/')
+          .end((err: any, res: ChaiHttp.Response) => {
 
-    it('HEAD method on route "/"', done => {
-      request(server.getInstance())
-        .head('/')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.be.eql('');
-          done();
-        });
-    });
+            expect(res).to.have.status(200);
 
-    it('DELETE method on route "/"', done => {
-      request(server.getInstance())
-        .delete('/')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.be.eql('DELETE method');
-          done();
-        });
-    });
+            if (httpMethod == ActionHttpMethod.HEAD) {
+              expect(res.text).equals('');
+            } else {
+              expect(res.text).to.be.eql(`${httpMethod} method`);
+            }
 
-    it('PUT method on route "/"', done => {
-      request(server.getInstance())
-        .put('/')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.be.eql('PUT method');
-          done();
-        });
-    });
-
-    it('PATCH method on route "/"', done => {
-      request(server.getInstance())
-        .patch('/')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.be.eql('PATCH method');
-          done();
-        });
-    });
-
-    it('OPTIONS method on route "/"', done => {
-      request(server.getInstance())
-        .options('/')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.be.eql('OPTIONS method');
-          done();
-        });
+            done();
+          });
+      });
     });
 
     it('.isRunning() should return false after calling .end()', async () => {

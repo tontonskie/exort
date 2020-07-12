@@ -17,11 +17,11 @@ describe('http/server', () => {
 
     }
 
-    it('exort:classType metadata should be "controller"', () => {
+    it('metadata classType metadata should be "controller"', () => {
       expect(getClassMetadata(TestController, 'classType')).equals('controller');
     });
 
-    it('exort:controller should match', () => {
+    it('metadata controller should match', () => {
       expect(getClassMetadata(TestController, 'controller')).to.be.eql({ name: TestController.name });
     });
   });
@@ -33,11 +33,11 @@ describe('http/server', () => {
 
     }
 
-    it('exort:classType metadata should be "controller"', () => {
+    it('metadata classType metadata should be "controller"', () => {
       expect(getClassMetadata(TestController, 'classType')).equals('controller');
     });
 
-    it('exort:controller should match', () => {
+    it('metadata controller should match', () => {
       expect(getClassMetadata(TestController, 'controller')).to.be.eql({
         name: TestController.name,
         prefix: 'test-prefix'
@@ -60,16 +60,17 @@ describe('http/server', () => {
         }
       }
 
-      it('exort:classType should be "controller"', () => {
+      it('metadata classType should be "controller"', () => {
         expect(getClassMetadata(TestController, 'classType')).equals('controller');
       });
 
-      it('exort:controller should match', () => {
+      it('metadata controller should match', () => {
         expect(getClassMetadata(TestController, 'controller')).to.be.eql({
           name: TestController.name,
-          routes: {
-            '': 'testMethod'
-          },
+          routes: [{
+            path: '',
+            action: 'testMethod'
+          }],
           actions: {
             'testMethod': {
               method: httpMethod
@@ -90,16 +91,17 @@ describe('http/server', () => {
         }
       }
 
-      it('exort:classType should be "controller"', () => {
+      it('metadata classType should be "controller"', () => {
         expect(getClassMetadata(TestController, 'classType')).equals('controller');
       });
 
-      it('exort:controller should match', () => {
+      it('metadata controller should match', () => {
         expect(getClassMetadata(TestController, 'controller')).to.be.eql({
           name: TestController.name,
-          routes: {
-            'test-route': 'testMethod'
-          },
+          routes: [{
+            path: 'test-route',
+            action: 'testMethod'
+          }],
           actions: {
             'testMethod': {
               method: httpMethod
@@ -120,19 +122,78 @@ describe('http/server', () => {
         }
       }
 
-      it('exort:classType should be "controller"', () => {
+      it('metadata classType should be "controller"', () => {
         expect(getClassMetadata(TestController, 'classType')).equals('controller');
       });
 
-      it('exort:controller should match', () => {
+      it('metadata controller should match', () => {
         expect(getClassMetadata(TestController, 'controller')).to.be.eql({
           name: TestController.name,
           prefix: 'test-controller',
-          routes: {
-            'test-route': 'testMethod'
-          },
+          routes: [{
+            path: 'test-route',
+            action: 'testMethod'
+          }],
           actions: {
             'testMethod': {
+              method: httpMethod
+            }
+          }
+        });
+      });
+    });
+
+    describe(`@Controller(prefix) and 3 @${decoratorName}(path)`, () => {
+
+      @Controller('test-controller')
+      class TestController {
+
+        @HttpMethodDecorator('test-route/test')
+        firstMethod() {
+
+        }
+
+        @HttpMethodDecorator('test-route/test2nd')
+        secondMethod() {
+
+        }
+
+        @HttpMethodDecorator('test-route')
+        thirdMethod() {
+
+        }
+      }
+
+      it('metadata classType should be "controller"', () => {
+        expect(getClassMetadata(TestController, 'classType')).equals('controller');
+      });
+
+      it('metadata controller should match the order of routes', () => {
+        expect(getClassMetadata(TestController, 'controller')).to.be.eql({
+          name: TestController.name,
+          prefix: 'test-controller',
+          routes: [
+            {
+              path: 'test-route/test',
+              action: 'firstMethod'
+            },
+            {
+              path: 'test-route/test2nd',
+              action: 'secondMethod'
+            },
+            {
+              path: 'test-route',
+              action: 'thirdMethod'
+            }
+          ],
+          actions: {
+            'firstMethod': {
+              method: httpMethod
+            },
+            'secondMethod': {
+              method: httpMethod
+            },
+            'thirdMethod': {
               method: httpMethod
             }
           }

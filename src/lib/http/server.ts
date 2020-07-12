@@ -14,7 +14,7 @@ export interface BaseResponse {
 }
 
 export interface RequestHandler {
-  (request: any, response: any, next: (err?: any) => void): void;
+  (request: BaseRequest, response: BaseResponse, next: (err?: any) => void): void;
 }
 
 export interface HttpServerClass {
@@ -49,6 +49,12 @@ export abstract class HttpServer {
   abstract put(path: string | RegExp, handler: RequestHandler): void;
   abstract patch(path: string | RegExp, handler: RequestHandler): void;
   abstract options(path: string | RegExp, handler: RequestHandler): void;
+  abstract all(path: string | RegExp, handler: RequestHandler): void;
+
+  abstract route(httpMethod: ActionHttpMethod, path: string | RegExp, handler: RequestHandler): void;
+  abstract route(httpMethod: ActionHttpMethod[], path: string | RegExp, handler: RequestHandler): void;
+
+  abstract handleController(controller: Object): void;
 }
 
 export enum ActionHttpMethod {
@@ -65,10 +71,15 @@ export interface ActionDetails {
   method: ActionHttpMethod;
 }
 
+export interface RouteAction {
+  path: string;
+  action: string;
+}
+
 export interface ControllerDetails {
   name: string;
   prefix?: string;
-  routes?: KeyValuePair<string>;
+  routes?: RouteAction[];
   actions?: KeyValuePair<ActionDetails>;
 }
 
@@ -82,11 +93,17 @@ function addRouteMetadata(controllerClass: Function, path: string, actionName: s
     metadata = getDefaultControllerMetadata(controllerClass);
   }
 
-  metadata.routes = metadata.routes || {};
-  metadata.routes[path || ''] = actionName;
-
   metadata.actions = metadata.actions || {};
+  if (metadata.actions[actionName]) {
+    throw new Error('Only one http method decorator can be applied to a controller method / action');
+  }
+
   metadata.actions[actionName] = details;
+  metadata.routes = metadata.routes || [];
+  metadata.routes.push({
+    path: path || '',
+    action: actionName
+  });
 
   setClassMetadata(controllerClass, 'controller', metadata);
 }

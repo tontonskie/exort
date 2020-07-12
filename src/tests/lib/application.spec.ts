@@ -1,9 +1,8 @@
-import { Application } from '../../lib';
+import { Application, Controller, Service } from '../../lib';
 import { ExpressServer } from '../../lib/http/express';
 import { expect } from '../utils';
 
 describe('application', () => {
-
   describe('Application', () => {
 
     const config = {
@@ -19,9 +18,43 @@ describe('application', () => {
     const httpServer = new ExpressServer(config.http);
     const application = new Application(config);
 
+    it('should have an initialized container with self instance registered', () => {
+      expect(application.container.getRegisteredInstance(Application)).to.be.instanceOf(Application);
+      expect(application.container.getRegisteredInstance(Application)).to.be.eql(application);
+    });
+
     it('passed HttpServer instance to .setHttpServer() should be equal to .getHttpServer()', () => {
       application.setHttpServer(httpServer);
       expect(application.getHttpServer()).to.be.eql(httpServer);
+    });
+
+    it('.make() should return an instance of the class with its dependencies', () => {
+
+      @Service()
+      class FirstTestService {
+
+      }
+
+      @Service()
+      class SecondTestService {
+
+        constructor(public firstTestService: FirstTestService) {}
+      }
+
+      @Controller()
+      class TestController {
+
+        constructor(public firstTestService: FirstTestService,
+                    public secondTestService: SecondTestService) {}
+      }
+
+      let controller = application.make(TestController);
+      expect(controller.firstTestService).to.be.instanceOf(FirstTestService);
+      expect(controller.secondTestService).to.be.instanceOf(SecondTestService);
+      expect(controller.secondTestService.firstTestService).to.be.instanceOf(FirstTestService);
+      expect(application.container.getRegisteredInstance(FirstTestService)).to.be.eql(controller.firstTestService);
+      expect(application.container.getRegisteredInstance(SecondTestService)).to.be.eql(controller.secondTestService);
+      expect(application.container.getRegisteredInstance(SecondTestService).firstTestService).to.be.eql(controller.firstTestService);
     });
 
     it('.running should be false before calling .start()', () => {

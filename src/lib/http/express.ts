@@ -1,4 +1,4 @@
-import { HttpServer, HttpConfig, BaseRequest, BaseResponse } from './server';
+import { HttpServer, HttpConfig, BaseRequest, BaseResponse, ActionHttpMethod } from './server';
 import * as express from 'express';
 import * as http from 'http';
 
@@ -49,6 +49,25 @@ export class ExpressServer extends HttpServer {
 
   options(path: string | RegExp, handler: ExpressRequestHandler) {
     this.instance.options(path, handler);
+  }
+
+  all(path: string | RegExp, handler: ExpressRequestHandler) {
+    this.instance.all(path, handler);
+  }
+
+  route(httpMethod: ActionHttpMethod, path: string | RegExp, handler: ExpressRequestHandler): void;
+  route(httpMethod: ActionHttpMethod[], path: string | RegExp, handler: ExpressRequestHandler): void;
+  route(httpMethod: ActionHttpMethod | ActionHttpMethod[], path: string | RegExp, handler: ExpressRequestHandler) {
+    if (!Array.isArray(httpMethod)) {
+      httpMethod = [httpMethod];
+    }
+    for (let method of httpMethod) {
+      this[method](path, handler);
+    }
+  }
+
+  handleController(controller: Object) {
+
   }
 
   getInstance() {
