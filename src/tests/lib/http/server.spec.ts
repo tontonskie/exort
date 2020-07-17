@@ -22,7 +22,10 @@ describe('http/server', () => {
     });
 
     it('metadata controller should match', () => {
-      expect(getClassMetadata(TestController, 'controller')).to.be.eql({ name: TestController.name });
+      expect(getClassMetadata(TestController, 'controller')).to.be.eql({
+        name: TestController.name,
+        prefix: '/'
+      });
     });
   });
 
@@ -40,7 +43,7 @@ describe('http/server', () => {
     it('metadata controller should match', () => {
       expect(getClassMetadata(TestController, 'controller')).to.be.eql({
         name: TestController.name,
-        prefix: 'test-prefix'
+        prefix: '/test-prefix'
       });
     });
   });
@@ -67,8 +70,9 @@ describe('http/server', () => {
       it('metadata controller should match', () => {
         expect(getClassMetadata(TestController, 'controller')).to.be.eql({
           name: TestController.name,
+          prefix: '/',
           routes: [{
-            path: '',
+            path: '/',
             action: 'testMethod'
           }],
           actions: {
@@ -98,8 +102,9 @@ describe('http/server', () => {
       it('metadata controller should match', () => {
         expect(getClassMetadata(TestController, 'controller')).to.be.eql({
           name: TestController.name,
+          prefix: '/',
           routes: [{
-            path: 'test-route',
+            path: '/test-route',
             action: 'testMethod'
           }],
           actions: {
@@ -129,9 +134,9 @@ describe('http/server', () => {
       it('metadata controller should match', () => {
         expect(getClassMetadata(TestController, 'controller')).to.be.eql({
           name: TestController.name,
-          prefix: 'test-controller',
+          prefix: '/test-controller',
           routes: [{
-            path: 'test-route',
+            path: '/test-route',
             action: 'testMethod'
           }],
           actions: {
@@ -171,18 +176,18 @@ describe('http/server', () => {
       it('metadata controller should match the order of routes', () => {
         expect(getClassMetadata(TestController, 'controller')).to.be.eql({
           name: TestController.name,
-          prefix: 'test-controller',
+          prefix: '/test-controller',
           routes: [
             {
-              path: 'test-route/test',
+              path: '/test-route/test',
               action: 'firstMethod'
             },
             {
-              path: 'test-route/test2nd',
+              path: '/test-route/test2nd',
               action: 'secondMethod'
             },
             {
-              path: 'test-route',
+              path: '/test-route',
               action: 'thirdMethod'
             }
           ],

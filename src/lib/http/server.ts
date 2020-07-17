@@ -1,4 +1,5 @@
 import { KeyValuePair, setClassMetadata, getClassMetadata } from '../metadata';
+import { Container } from '../container';
 
 export interface HttpConfig {
   port: number;
@@ -13,7 +14,7 @@ export interface BaseResponse {
 
 }
 
-export interface RequestHandler {
+export interface BaseRequestHandler {
   (request: BaseRequest, response: BaseResponse, next: (err?: any) => void): void;
 }
 
@@ -42,19 +43,18 @@ export abstract class HttpServer {
   abstract async start(): Promise<void>;
   abstract async end(): Promise<void>;
 
-  abstract get(path: string | RegExp, handler: RequestHandler): void;
-  abstract post(path: string | RegExp, handler: RequestHandler): void;
-  abstract head(path: string | RegExp, handler: RequestHandler): void;
-  abstract delete(path: string | RegExp, handler: RequestHandler): void;
-  abstract put(path: string | RegExp, handler: RequestHandler): void;
-  abstract patch(path: string | RegExp, handler: RequestHandler): void;
-  abstract options(path: string | RegExp, handler: RequestHandler): void;
-  abstract all(path: string | RegExp, handler: RequestHandler): void;
+  abstract get(path: string | RegExp, handler: BaseRequestHandler): void;
+  abstract post(path: string | RegExp, handler: BaseRequestHandler): void;
+  abstract head(path: string | RegExp, handler: BaseRequestHandler): void;
+  abstract delete(path: string | RegExp, handler: BaseRequestHandler): void;
+  abstract put(path: string | RegExp, handler: BaseRequestHandler): void;
+  abstract patch(path: string | RegExp, handler: BaseRequestHandler): void;
+  abstract options(path: string | RegExp, handler: BaseRequestHandler): void;
+  abstract all(path: string | RegExp, handler: BaseRequestHandler): void;
 
-  abstract route(httpMethod: ActionHttpMethod, path: string | RegExp, handler: RequestHandler): void;
-  abstract route(httpMethod: ActionHttpMethod[], path: string | RegExp, handler: RequestHandler): void;
-
-  abstract handleController(controller: Object): void;
+  abstract setContainerBindings(container: Container): void;
+  abstract handleController(container: Container, controller: Object): void;
+  abstract callAction(controller: Object, action: string, deps: Object[], req: BaseRequest, res: BaseResponse, next: (err?: any) => void): void;
 }
 
 export enum ActionHttpMethod {
@@ -78,13 +78,24 @@ export interface RouteAction {
 
 export interface ControllerDetails {
   name: string;
-  prefix?: string;
+  prefix: string;
   routes?: RouteAction[];
   actions?: KeyValuePair<ActionDetails>;
 }
 
 function getDefaultControllerMetadata(controllerClass: Function): ControllerDetails {
-  return { name: controllerClass.name };
+  return {
+    name: controllerClass.name,
+    prefix: '/'
+  };
+}
+
+function applyPathPrefix(path: string) {
+  path = path ? path : '/';
+  if (!path.startsWith('/')) {
+    path = '/' + path;
+  }
+  return path;
 }
 
 function addRouteMetadata(controllerClass: Function, path: string, actionName: string, details: ActionDetails) {
@@ -101,7 +112,7 @@ function addRouteMetadata(controllerClass: Function, path: string, actionName: s
   metadata.actions[actionName] = details;
   metadata.routes = metadata.routes || [];
   metadata.routes.push({
-    path: path || '',
+    path: applyPathPrefix(path),
     action: actionName
   });
 
@@ -117,10 +128,7 @@ export function Controller(prefix?: string) {
       metadata = getDefaultControllerMetadata(target);
     }
 
-    if (typeof prefix != 'undefined') {
-      metadata.prefix = prefix;
-    }
-
+    metadata.prefix = applyPathPrefix(prefix);
     setClassMetadata(target, 'controller', metadata);
   };
 }

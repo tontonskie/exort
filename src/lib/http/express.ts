@@ -1,16 +1,29 @@
-import { HttpServer, HttpConfig, BaseRequest, BaseResponse, ActionHttpMethod } from './server';
+import { HttpServer, HttpConfig, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails } from './server';
+import { getClassMetadata, getParamTypes } from '../metadata';
+import { Container } from '../container';
+import { _ } from '../utils';
 import * as express from 'express';
 import * as http from 'http';
+
+export interface RequestHandler extends express.RequestHandler, BaseRequestHandler {
+
+}
+
+// Just a proxy class
+export abstract class Request {
+
+}
 
 export interface Request extends express.Request, BaseRequest {
 
 }
 
-export interface Response extends express.Response, BaseResponse {
+// Just a proxy class
+export abstract class Response {
 
 }
 
-export interface ExpressRequestHandler extends express.RequestHandler {
+export interface Response extends express.Response, BaseResponse {
 
 }
 
@@ -23,51 +36,96 @@ export class ExpressServer extends HttpServer {
     super(config);
   }
 
-  get(path: string | RegExp, handler: ExpressRequestHandler) {
+  get(path: string | RegExp, handler: RequestHandler) {
     this.instance.get(path, handler);
   }
 
-  post(path: string | RegExp, handler: ExpressRequestHandler) {
+  post(path: string | RegExp, handler: RequestHandler) {
     this.instance.post(path, handler);
   }
 
-  head(path: string | RegExp, handler: ExpressRequestHandler) {
+  head(path: string | RegExp, handler: RequestHandler) {
     this.instance.head(path, handler);
   }
 
-  delete(path: string | RegExp, handler: ExpressRequestHandler) {
+  delete(path: string | RegExp, handler: RequestHandler) {
     this.instance.delete(path, handler);
   }
 
-  put(path: string | RegExp, handler: ExpressRequestHandler) {
+  put(path: string | RegExp, handler: RequestHandler) {
     this.instance.put(path, handler);
   }
 
-  patch(path: string | RegExp, handler: ExpressRequestHandler) {
+  patch(path: string | RegExp, handler: RequestHandler) {
     this.instance.patch(path, handler);
   }
 
-  options(path: string | RegExp, handler: ExpressRequestHandler) {
+  options(path: string | RegExp, handler: RequestHandler) {
     this.instance.options(path, handler);
   }
 
-  all(path: string | RegExp, handler: ExpressRequestHandler) {
+  all(path: string | RegExp, handler: RequestHandler) {
     this.instance.all(path, handler);
   }
 
-  route(httpMethod: ActionHttpMethod, path: string | RegExp, handler: ExpressRequestHandler): void;
-  route(httpMethod: ActionHttpMethod[], path: string | RegExp, handler: ExpressRequestHandler): void;
-  route(httpMethod: ActionHttpMethod | ActionHttpMethod[], path: string | RegExp, handler: ExpressRequestHandler) {
-    if (!Array.isArray(httpMethod)) {
-      httpMethod = [httpMethod];
+  setContainerBindings(container: Container) {
+    container.set(ExpressServer, this);
+  }
+
+  handleController(container: Container, controllerClass: Function) {
+    const metadata: ControllerDetails = getClassMetadata(controllerClass, 'controller');
+    if (_.isEmpty(metadata)) {
+      throw new Error(`${controllerClass.name} doesn't have controller metadata`);
     }
-    for (let method of httpMethod) {
-      this[method](path, handler);
+
+    const controller = container.resolve(controllerClass);
+    if (!_.isEmpty(metadata.routes)) {
+
+      const router = express.Router();
+      for (let route of metadata.routes) {
+        if (typeof controller[route.action] != 'function') {
+          throw new Error(`${controllerClass.name} doesn't have "${route.action}" method`);
+        }
+
+        const routerMethodName = metadata.actions[route.action].method.toLowerCase();
+        const dependencies = getParamTypes(controllerClass.prototype, route.action);
+        for (let i in dependencies) {
+          if (getClassMetadata(dependencies[i], 'classType') == 'controller') {
+            throw new Error(`Cannot use ${dependencies[i].name} as dependency`);
+          } else if (dependencies[i] != Request && dependencies[i] != Response) {
+            dependencies[i] = container.resolve(dependencies[i]);
+          }
+        }
+
+        router[routerMethodName](route.path, this.callAction.bind(this, controller, route.action, dependencies));
+      }
+
+      this.instance.use(metadata.prefix, router);
     }
   }
 
-  handleController(controller: Object) {
+  callAction(controller: Object, action: string, dependencies: Object[], request: Request, response: Response, next: express.NextFunction) {
+    const ensuredDependencies = [];
+    for (let i in dependencies) {
+      if (typeof dependencies[i] == 'function') {
 
+        if (dependencies[i] == Request) {
+          ensuredDependencies[i] = request;
+        } else if (dependencies[i] == Response) {
+          ensuredDependencies[i] = response;
+        } else {
+          ensuredDependencies[i] = null;
+        }
+
+      } else {
+        ensuredDependencies[i] = dependencies[i];
+      }
+    }
+
+    const result = controller[action].apply(controller, ensuredDependencies);
+    if (result instanceof Promise) {
+      result.then(next).catch(next);
+    }
   }
 
   getInstance() {

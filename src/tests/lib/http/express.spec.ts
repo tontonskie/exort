@@ -6,7 +6,7 @@ describe('http/express', () => {
   describe('ExpressServer', () => {
 
     const config = {
-      port: 3000,
+      port: 3001,
       hostname: '127.0.0.1'
     };
     const server: ExpressServer = new ExpressServer(config);
@@ -14,7 +14,7 @@ describe('http/express', () => {
     before(() => {
       Object.values(ActionHttpMethod).forEach(httpMethod => {
         server[`${httpMethod.toLowerCase()}`]('/', (request: Request, response: Response) => {
-          response.send(`${httpMethod} method`);
+          response.send(`${request.method} method`);
         });
       });
     });
