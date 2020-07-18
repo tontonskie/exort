@@ -1,6 +1,0 @@
-describe('bootstrap', () => {
-
-  describe('boot()', () => {
-
-  });
-});

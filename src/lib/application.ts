@@ -1,5 +1,4 @@
-import { HttpServer } from './http/server';
-import { Config, ConfigData } from './config';
+import { HttpServer, HttpServerClass, MiddlewareClass } from './http/server';
 import { getClassMetadata } from './metadata';
 import { Container } from './container';
 import { _ } from './utils';
@@ -8,18 +7,12 @@ export class Application {
 
   protected httpServer?: HttpServer;
 
-  private _config: Config;
   private _running: boolean = false;
   private _container: Container;
 
-  constructor(config: ConfigData) {
-    this._config = new Config(config);
+  constructor() {
     this._container = new Container();
     this._container.set(Application, this);
-  }
-
-  get config() {
-    return this._config;
   }
 
   get running() {
@@ -59,14 +52,30 @@ export class Application {
       throw new Error('Should be @Controller decorated');
     }
 
-    this.httpServer.handleController(this._container, controllerClass);
+    this.httpServer.useController(this._container, controllerClass);
   }
 
-  async start() {
+  addMiddleware(middlewareClass: MiddlewareClass) {
+    if (this._running) {
+      throw new Error(`Can't add middleware while application is already running`);
+    }
+
+    if (!this.httpServer) {
+      throw new Error('HttpServer is not set');
+    }
+
+    if (getClassMetadata(middlewareClass, 'classType') != 'middleware') {
+      throw new Error('Should be @Middleware decorated');
+    }
+
+    this.httpServer.useMiddleware(this._container, middlewareClass);
+  }
+
+  async start(port: number, hostname?: string) {
     if (this._running) {
       throw new Error(`Can't call .start() twice. Application is already running`);
     }
-    await this.httpServer.start();
+    await this.httpServer.start(port, hostname);
     this._running = true;
   }
 
@@ -77,4 +86,10 @@ export class Application {
     await this.httpServer.end();
     this._running = false;
   }
+}
+
+export function createApplication(httpServerClass: HttpServerClass) {
+  const application = new Application();
+  application.setHttpServer(new httpServerClass());
+  return application;
 }

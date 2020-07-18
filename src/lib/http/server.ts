@@ -14,12 +14,16 @@ export interface BaseResponse {
 
 }
 
+export interface BaseNextFunction {
+  (err?: any): void;
+}
+
 export interface BaseRequestHandler {
-  (request: BaseRequest, response: BaseResponse, next: (err?: any) => void): void;
+  (request: BaseRequest, response: BaseResponse, next: BaseNextFunction): void;
 }
 
 export interface HttpServerClass {
-  new(httpConfig: HttpConfig): HttpServer;
+  new(): HttpServer;
 }
 
 export abstract class HttpServer {
@@ -28,19 +32,10 @@ export abstract class HttpServer {
    * instance of the abstracted http server. For ex. express
    */
   protected abstract instance: any;
-  private _config: HttpConfig;
-
-  constructor(config: HttpConfig) {
-    this._config = config;
-  }
-
-  get config() {
-    return this._config;
-  }
 
   abstract getInstance(): any;
   abstract isRunning(): boolean;
-  abstract async start(): Promise<void>;
+  abstract async start(port: number, hostname?: string): Promise<void>;
   abstract async end(): Promise<void>;
 
   abstract get(path: string | RegExp, handler: BaseRequestHandler): void;
@@ -53,8 +48,8 @@ export abstract class HttpServer {
   abstract all(path: string | RegExp, handler: BaseRequestHandler): void;
 
   abstract setContainerBindings(container: Container): void;
-  abstract handleController(container: Container, controller: Object): void;
-  abstract callAction(controller: Object, action: string, deps: Object[], req: BaseRequest, res: BaseResponse, next: (err?: any) => void): void;
+  abstract useController(container: Container, controllerClass: Function): void;
+  abstract useMiddleware(container: Container, middlewareClass: MiddlewareClass): void;
 }
 
 export enum ActionHttpMethod {
@@ -99,7 +94,7 @@ function applyPathPrefix(path: string) {
 }
 
 function addRouteMetadata(controllerClass: Function, path: string, actionName: string, details: ActionDetails) {
-  let metadata = getClassMetadata(controllerClass, 'controller') as ControllerDetails;
+  let metadata: ControllerDetails = getClassMetadata(controllerClass, 'controller');
   if (!metadata) {
     metadata = getDefaultControllerMetadata(controllerClass);
   }
@@ -123,7 +118,7 @@ export function Controller(prefix?: string) {
   return (target: Function) => {
     setClassMetadata(target, 'classType', 'controller');
 
-    let metadata = getClassMetadata(target, 'controller') as ControllerDetails;
+    let metadata: ControllerDetails = getClassMetadata(target, 'controller');
     if (!metadata) {
       metadata = getDefaultControllerMetadata(target);
     }
@@ -221,5 +216,30 @@ export function Options(path?: string) {
         method: ActionHttpMethod.OPTIONS
       }
     );
+  };
+}
+
+export interface CallableMiddleware {
+  handle(...params: any[]): Promise<void> | void;
+}
+
+export interface MiddlewareClass {
+  new(...params: any[]): CallableMiddleware;
+}
+
+export interface MiddlewareDetails {
+  name: string;
+}
+
+export function Middleware() {
+  return (target: Function) => {
+    setClassMetadata(target, 'classType', 'middleware');
+
+    let metadata: MiddlewareDetails = getClassMetadata(target, 'middleware');
+    if (!metadata) {
+      metadata = { name: target.name };
+    }
+
+    setClassMetadata(target, 'middleware', metadata);
   };
 }

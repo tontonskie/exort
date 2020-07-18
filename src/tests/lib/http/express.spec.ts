@@ -1,16 +1,11 @@
 import { HttpServer, ActionHttpMethod } from '../../../lib';
-import { ExpressServer, Request, Response } from '../../../lib/http/express';
+import { Express, Request, Response } from '../../../lib/http/express';
 import { expect, request } from '../../utils';
 
 describe('http/express', () => {
   describe('ExpressServer', () => {
 
-    const config = {
-      port: 3001,
-      hostname: '127.0.0.1'
-    };
-    const server: ExpressServer = new ExpressServer(config);
-
+    const server: Express = new Express();
     before(() => {
       Object.values(ActionHttpMethod).forEach(httpMethod => {
         server[`${httpMethod.toLowerCase()}`]('/', (request: Request, response: Response) => {
@@ -27,21 +22,17 @@ describe('http/express', () => {
       expect(server.getInstance()).to.be.a('function').property('name', 'app');
     });
 
-    it('.config should match the provided config', () => {
-      expect(server.config).to.be.eql(config);
-    });
-
     it('.isRunning() should return false before calling .start()', () => {
       expect(server.isRunning()).equals(false);
     });
 
     it('.isRunning() should return true after calling .start()', async () => {
-      await server.start();
+      await server.start(3000);
       expect(server.isRunning()).equals(true);
     });
 
     it('calling .start() twice should throw an error', () => {
-      return expect(server.start()).to.eventually.rejectedWith(Error, `Can't call .start() twice. Http server is already running.`);
+      return expect(server.start(3000)).to.eventually.rejectedWith(Error, `Can't call .start() twice. Http server is already running.`);
     });
 
     Object.values(ActionHttpMethod).forEach(httpMethod => {

@@ -1,4 +1,4 @@
-import { Controller, getClassMetadata, ActionHttpMethod, _ } from '../../../lib';
+import { Controller, getClassMetadata, ActionHttpMethod, _, Middleware } from '../../../lib';
 import * as httpServer from '../../../lib/http/server';
 import { expect } from  '../../utils';
 
@@ -50,7 +50,7 @@ describe('http/server', () => {
 
   Object.values(ActionHttpMethod).forEach(httpMethod => {
     const decoratorName = _.capitalize(httpMethod);
-    const HttpMethodDecorator = httpServer[decoratorName] as Function;
+    const HttpMethodDecorator: Function = httpServer[decoratorName];
 
     describe(`@${decoratorName}()`, () => {
 
@@ -204,6 +204,22 @@ describe('http/server', () => {
           }
         });
       });
+    });
+  });
+
+  describe('@Middleware()', () => {
+
+    @Middleware()
+    class TestMiddleware {
+
+    }
+
+    it('metadata classType should be "middleware"', () => {
+      expect(getClassMetadata(TestMiddleware, 'classType')).equals('middleware');
+    });
+
+    it('metadata middleware should match', () => {
+      expect(getClassMetadata(TestMiddleware, 'middleware')).to.be.eql({ name: TestMiddleware.name });
     });
   });
 });

@@ -4,5 +4,5 @@ export interface Utilities extends lodash.LoDashStatic {
 
 }
 
-const _ = lodash as Utilities;
+const _: Utilities = lodash;
 export { _ };

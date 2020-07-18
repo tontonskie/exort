@@ -1,39 +1,33 @@
-import { Application, Controller, Service, ActionHttpMethod, _ } from '../../lib';
-import { ExpressServer, Request, Response } from '../../lib/http/express';
+import { Application, createApplication, Controller, Service, ActionHttpMethod, Middleware, _ } from '../../lib';
+import { Express, Request, Response, Next } from '../../lib/http/express';
 import * as httpServerModule from '../../lib/http/server';
 import { expect, request } from '../utils';
 
 describe('application', () => {
+
+  const app = createApplication(Express);
+  describe('createApplication()', () => {
+    it(`should return an instance of ${Application.name} class`, () => {
+      expect(app).to.be.instanceOf(Application);
+    });
+  });
+
   describe('Application', () => {
-
-    const config = {
-      environment: 'test',
-      http: {
-        port: 3000,
-        hostname: '127.0.0.1'
-      },
-      database: {
-
-      }
-    };
-    const httpServer = new ExpressServer(config.http);
-    const app = new Application(config);
 
     it('should have an initialized factory with self instance resolved', () => {
       expect(app.container.get(Application)).to.be.instanceOf(Application);
       expect(app.container.get(Application)).to.be.eql(app);
     });
 
-    it('passed HttpServer instance to .setHttpServer() should be equal to .getHttpServer()', () => {
-      app.setHttpServer(httpServer);
-      expect(app.getHttpServer()).to.be.eql(httpServer);
+    it(`.getHttpServer() should return an instance of ${Express.name}`, () => {
+      expect(app.getHttpServer()).to.be.instanceOf(Express);
     });
 
-    it('resolving the HttpServer class used should return the same HttpServer instance', () => {
-      expect(app.container.resolve(ExpressServer)).to.be.instanceOf(ExpressServer);
-      expect(app.container.get(ExpressServer)).to.be.instanceOf(ExpressServer);
-      expect(app.container.resolve(ExpressServer)).to.be.eql(httpServer);
-      expect(app.container.get(ExpressServer)).to.be.eql(httpServer);
+    it(`resolving the ${Express.name} class used should return the same ${Express.name} instance`, () => {
+      expect(app.container.resolve(Express)).to.be.instanceOf(Express);
+      expect(app.container.get(Express)).to.be.instanceOf(Express);
+      expect(app.container.resolve(Express)).to.be.eql(app.getHttpServer());
+      expect(app.container.get(Express)).to.be.eql(app.getHttpServer());
     });
 
     it('.make() should return an instance with its dependencies', () => {
@@ -89,9 +83,38 @@ describe('application', () => {
       expect(() => app.make(TestController)).to.throw(Error, 'Circular dependency TestController -> SecondService -> SecondService');
     });
 
+    it('.addMiddleware() should resolve middleware and dependencies but not Request and Response class', () => {
+
+      @Service()
+      class ServiceA {
+
+      }
+
+      @Middleware()
+      class TestMiddleware {
+
+        constructor(public serviceA: ServiceA) {}
+
+        handle(request: Request, response: Response, next: Next) {
+          next();
+        }
+      }
+
+      app.addMiddleware(TestMiddleware);
+      const middleware = app.container.get<TestMiddleware>(TestMiddleware);
+      const serviceA = app.container.get<ServiceA>(ServiceA);
+      const resolvedClasses = app.container.getResolvedClasses();
+      expect(middleware).to.be.instanceOf(TestMiddleware);
+      expect(resolvedClasses).to.include(TestMiddleware);
+      expect(resolvedClasses).to.include(ServiceA);
+      expect(middleware.serviceA).to.be.instanceof(ServiceA);
+      expect(serviceA).to.be.instanceof(ServiceA);
+      expect(serviceA).to.be.eql(middleware.serviceA);
+    });
+
     Object.values(ActionHttpMethod).forEach(httpMethod => {
       const decoratorName = _.capitalize(httpMethod);
-      const HttpMethodDecorator = httpServerModule[decoratorName] as Function;
+      const HttpMethodDecorator: Function = httpServerModule[decoratorName];
       const methodName = httpMethod.toLowerCase();
       it(`.addController() with @${decoratorName}() should resolve controller and dependencies but not Request and Response class`, () => {
 
@@ -139,6 +162,8 @@ describe('application', () => {
         expect(serviceB).to.be.instanceof(ServiceB);
         expect(() => app.container.get(Request)).to.throw(Error, `Class "Request" doesn't have a registered instance or not expected by container`);
         expect(() => app.container.get(Response)).to.throw(Error, `Class "Response" doesn't have a registered instance or not expected by container`);
+        expect(resolvedClasses).to.not.include(Request);
+        expect(resolvedClasses).to.not.include(Response);
       });
     });
 
@@ -147,7 +172,7 @@ describe('application', () => {
     });
 
     it('.running should be true after calling .start()', async () => {
-      await app.start();
+      await app.start(3000);
       expect(app.running).equals(true);
     });
 
@@ -156,7 +181,7 @@ describe('application', () => {
     });
 
     it('calling .start() twice should throw an error', () => {
-      return expect(app.start()).to.eventually.rejectedWith(Error, `Can't call .start() twice. Application is already running`);
+      return expect(app.start(3000)).to.eventually.rejectedWith(Error, `Can't call .start() twice. Application is already running`);
     });
 
     Object.values(ActionHttpMethod).forEach(httpMethod => {

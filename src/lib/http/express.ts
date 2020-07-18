@@ -1,4 +1,7 @@
-import { HttpServer, HttpConfig, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails } from './server';
+import {
+  HttpServer, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails, MiddlewareClass, MiddlewareDetails, CallableMiddleware,
+  BaseNextFunction
+} from './server';
 import { getClassMetadata, getParamTypes } from '../metadata';
 import { Container } from '../container';
 import { _ } from '../utils';
@@ -27,14 +30,18 @@ export interface Response extends express.Response, BaseResponse {
 
 }
 
-export class ExpressServer extends HttpServer {
+export function Next() {
+
+}
+
+export interface Next extends express.NextFunction, BaseNextFunction {
+
+}
+
+export class Express extends HttpServer {
 
   private server?: http.Server;
   protected instance: express.Application = express();
-
-  constructor(config: HttpConfig) {
-    super(config);
-  }
 
   get(path: string | RegExp, handler: RequestHandler) {
     this.instance.get(path, handler);
@@ -69,17 +76,29 @@ export class ExpressServer extends HttpServer {
   }
 
   setContainerBindings(container: Container) {
-    container.set(ExpressServer, this);
+    container.set(Express, this);
   }
 
-  handleController(container: Container, controllerClass: Function) {
+  useMiddleware(container: Container, middlewareClass: MiddlewareClass) {
+    const metadata: MiddlewareDetails = getClassMetadata(middlewareClass, 'middleware');
+    if (_.isEmpty(metadata)) {
+      throw new Error(`${middlewareClass.name} doesn't have controller metadata`);
+    }
+
+    const middleware: CallableMiddleware = container.resolve(middlewareClass);
+    if (middleware) {
+      this.instance.use(this.callAction.bind(this, middleware, 'handle', null));
+    }
+  }
+
+  useController(container: Container, controllerClass: Function) {
     const metadata: ControllerDetails = getClassMetadata(controllerClass, 'controller');
     if (_.isEmpty(metadata)) {
       throw new Error(`${controllerClass.name} doesn't have controller metadata`);
     }
 
     const controller = container.resolve(controllerClass);
-    if (!_.isEmpty(metadata.routes)) {
+    if (controller && !_.isEmpty(metadata.routes)) {
 
       const router = express.Router();
       for (let route of metadata.routes) {
@@ -104,7 +123,12 @@ export class ExpressServer extends HttpServer {
     }
   }
 
-  callAction(controller: Object, action: string, dependencies: Object[], request: Request, response: Response, next: express.NextFunction) {
+  callAction(instance: Object, action: string, dependencies: Object[] | null, request: Request, response: Response, next: express.NextFunction) {
+    if (dependencies === null) {
+      instance[action].apply(instance, [request, response, next]);
+      return;
+    }
+
     const ensuredDependencies = [];
     for (let i in dependencies) {
       if (typeof dependencies[i] == 'function') {
@@ -113,6 +137,8 @@ export class ExpressServer extends HttpServer {
           ensuredDependencies[i] = request;
         } else if (dependencies[i] == Response) {
           ensuredDependencies[i] = response;
+        } else if (dependencies[i] == Next) {
+          ensuredDependencies[i] = next;
         } else {
           ensuredDependencies[i] = null;
         }
@@ -122,17 +148,14 @@ export class ExpressServer extends HttpServer {
       }
     }
 
-    const result = controller[action].apply(controller, ensuredDependencies);
-    if (result instanceof Promise) {
-      result.then(next).catch(next);
-    }
+    instance[action].apply(instance, ensuredDependencies);
   }
 
   getInstance() {
     return this.instance;
   }
 
-  async start() {
+  async start(port: number, hostname?: string) {
     if (this.isRunning()) {
       throw new Error(`Can't call .start() twice. Http server is already running.`);
     }
@@ -146,7 +169,7 @@ export class ExpressServer extends HttpServer {
         resolve();
       });
 
-      server.listen(this.config.port, this.config.hostname);
+      server.listen(port, hostname);
     });
   }
 

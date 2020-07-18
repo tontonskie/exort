@@ -3,7 +3,7 @@ export interface KeyValuePair<T = any> {
 }
 
 export const METADATA_PREFIX = 'exort:';
-export type MetadataKey = 'classType' | 'controller' | 'service';
+export type MetadataKey = 'classType' | 'middleware' | 'controller' | 'service';
 
 export function setClassMetadata(targetClass: Function, key: MetadataKey, value: any) {
   if (key == 'classType' && hasClassMetadata(targetClass, key)) {
