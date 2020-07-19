@@ -107,8 +107,8 @@ describe('application', () => {
       expect(middleware).to.be.instanceOf(TestMiddleware);
       expect(resolvedClasses).to.include(TestMiddleware);
       expect(resolvedClasses).to.include(ServiceA);
-      expect(middleware.serviceA).to.be.instanceof(ServiceA);
-      expect(serviceA).to.be.instanceof(ServiceA);
+      expect(middleware.serviceA).to.be.instanceOf(ServiceA);
+      expect(serviceA).to.be.instanceOf(ServiceA);
       expect(serviceA).to.be.eql(middleware.serviceA);
     });
 
@@ -156,10 +156,10 @@ describe('application', () => {
         expect(resolvedClasses).to.include(ServiceA);
         expect(resolvedClasses).to.include(ServiceB);
         expect(controller).to.be.instanceOf(TestController);
-        expect(controller.serviceA).to.be.instanceof(ServiceA);
-        expect(serviceA).to.be.instanceof(ServiceA);
+        expect(controller.serviceA).to.be.instanceOf(ServiceA);
+        expect(serviceA).to.be.instanceOf(ServiceA);
         expect(serviceA).to.be.eql(controller.serviceA);
-        expect(serviceB).to.be.instanceof(ServiceB);
+        expect(serviceB).to.be.instanceOf(ServiceB);
         expect(() => app.container.get(Request)).to.throw(Error, `Class "Request" doesn't have a registered instance or not expected by container`);
         expect(() => app.container.get(Response)).to.throw(Error, `Class "Response" doesn't have a registered instance or not expected by container`);
         expect(resolvedClasses).to.not.include(Request);
