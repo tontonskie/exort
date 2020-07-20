@@ -1,4 +1,4 @@
-import { HttpServer, HttpServerClass, MiddlewareClass } from './http/server';
+import { HttpServer, HttpServerClass, MiddlewareClass, MiddlewareConfig } from './http/server';
 import { getClassMetadata } from './metadata';
 import { Container } from './container';
 import { _ } from './utils';
@@ -29,7 +29,7 @@ export class Application {
 
   setHttpServer(httpServer: HttpServer) {
     if (this._running) {
-      throw new Error(`Can't change http server. Application is already running.`);
+      throw new Error('Cannot change http server. Application is already running.');
     }
     this.httpServer = httpServer;
     this.httpServer.setContainerBindings(this._container);
@@ -41,7 +41,7 @@ export class Application {
 
   addController(controllerClass: Function) {
     if (this._running) {
-      throw new Error(`Can't add controller while application is already running`);
+      throw new Error('Cannot add controller while application is already running');
     }
 
     if (!this.httpServer) {
@@ -55,25 +55,33 @@ export class Application {
     this.httpServer.useController(this._container, controllerClass);
   }
 
-  addMiddleware(middlewareClass: MiddlewareClass) {
+  addControllers(controllerClasses: Function[]) {
+    for (let controllerClass of controllerClasses) {
+      this.addController(controllerClass);
+    }
+  }
+
+  addMiddleware(middlewareClasses: MiddlewareClass | MiddlewareConfig | (MiddlewareConfig | MiddlewareClass)[]) {
     if (this._running) {
-      throw new Error(`Can't add middleware while application is already running`);
+      throw new Error('Cannot add middleware while application is already running');
     }
 
     if (!this.httpServer) {
       throw new Error('HttpServer is not set');
     }
 
-    if (getClassMetadata(middlewareClass, 'classType') != 'middleware') {
-      throw new Error('Should be @Middleware decorated');
+    if (!Array.isArray(middlewareClasses)) {
+      middlewareClasses = [middlewareClasses];
     }
 
-    this.httpServer.useMiddleware(this._container, middlewareClass);
+    for (let middlewareClass of middlewareClasses) {
+      this.httpServer.useMiddleware(this._container, middlewareClass);
+    }
   }
 
   async start(port: number, hostname?: string) {
     if (this._running) {
-      throw new Error(`Can't call .start() twice. Application is already running`);
+      throw new Error('Cannot call .start() twice. Application is already running');
     }
     await this.httpServer.start(port, hostname);
     this._running = true;

@@ -1,5 +1,5 @@
-import { Application, createApplication, Controller, Service, ActionHttpMethod, Middleware, _ } from '../../lib';
-import { Express, Request, Response, Next } from '../../lib/http/express';
+import { Application, createApplication, Controller, Service, ActionHttpMethod, Middleware, MiddlewareConfig, _ } from '../../lib';
+import { Express, Request, Response, NextFunction } from '../../lib/http/express';
 import * as httpServerModule from '../../lib/http/server';
 import { expect, request } from '../utils';
 
@@ -95,7 +95,7 @@ describe('application', () => {
 
         constructor(public serviceA: ServiceA) {}
 
-        handle(request: Request, response: Response, next: Next) {
+        handle(request: Request, response: Response, next: NextFunction) {
           next();
         }
       }
@@ -110,6 +110,120 @@ describe('application', () => {
       expect(middleware.serviceA).to.be.instanceOf(ServiceA);
       expect(serviceA).to.be.instanceOf(ServiceA);
       expect(serviceA).to.be.eql(middleware.serviceA);
+    });
+
+    it('.addMiddleware() with MiddlewareConfig should trigger .install() with config not null', () => {
+
+      @Service()
+      class ServiceA {
+
+      }
+
+      interface TestMiddlewareConfig {
+        count: number;
+      }
+
+      const config = {
+        count: 1
+      };
+
+      @Middleware()
+      class TestMiddleware {
+
+        public count: number = 0;
+
+        constructor(public serviceA: ServiceA) {}
+
+        install(config: TestMiddlewareConfig) {
+          this.count = config.count;
+        }
+
+        handle(request: Request, response: Response, next: NextFunction) {
+          next();
+        }
+
+        static configure(config: TestMiddlewareConfig) {
+          return new MiddlewareConfig(this, config);
+        }
+      }
+
+      app.addMiddleware(TestMiddleware.configure(config));
+      const middleware = app.container.get<TestMiddleware>(TestMiddleware);
+      const serviceA = app.container.get<ServiceA>(ServiceA);
+      const resolvedClasses = app.container.getResolvedClasses();
+      expect(middleware).to.be.instanceOf(TestMiddleware);
+      expect(resolvedClasses).to.include(TestMiddleware);
+      expect(resolvedClasses).to.include(ServiceA);
+      expect(middleware.serviceA).to.be.instanceOf(ServiceA);
+      expect(serviceA).to.be.instanceOf(ServiceA);
+      expect(serviceA).to.be.eql(middleware.serviceA);
+      expect(middleware.count).equals(config.count);
+    });
+
+    it('.addMiddleware() with array of MiddlewareClass | MiddlewareConfig should trigger .install()', () => {
+
+      @Service()
+      class ServiceA {
+
+      }
+
+      interface AttemptMiddlewareConfig {
+        count: number;
+      }
+
+      const attemptConfig = {
+        count: 1
+      };
+
+      @Middleware()
+      class AttemptMiddleware {
+
+        public count: number = 0;
+
+        constructor(public serviceA: ServiceA) {}
+
+        install(config: AttemptMiddlewareConfig) {
+          this.count = config.count;
+        }
+
+        handle(request: Request, response: Response, next: NextFunction) {
+          next();
+        }
+
+        static configure(config: AttemptMiddlewareConfig) {
+          return new MiddlewareConfig(this, config);
+        }
+      }
+
+      @Middleware()
+      class TestMiddleware {
+
+        constructor(public serviceA: ServiceA) {}
+
+        handle(request: Request, response: Response, next: NextFunction) {
+          next();
+        }
+      }
+
+      app.addMiddleware([
+        AttemptMiddleware.configure(attemptConfig),
+        TestMiddleware
+      ]);
+      const attemptMiddleware = app.container.get<AttemptMiddleware>(AttemptMiddleware);
+      const testMiddleware = app.container.get<TestMiddleware>(TestMiddleware);
+      const serviceA = app.container.get<ServiceA>(ServiceA);
+      const resolvedClasses = app.container.getResolvedClasses();
+      expect(attemptMiddleware).to.be.instanceOf(AttemptMiddleware);
+      expect(testMiddleware).to.be.instanceOf(TestMiddleware);
+      expect(resolvedClasses).to.include(AttemptMiddleware);
+      expect(resolvedClasses).to.include(TestMiddleware);
+      expect(resolvedClasses).to.include(ServiceA);
+      expect(attemptMiddleware.serviceA).to.be.instanceOf(ServiceA);
+      expect(testMiddleware.serviceA).to.be.instanceOf(ServiceA);
+      expect(serviceA).to.be.eql(attemptMiddleware.serviceA);
+      expect(serviceA).to.be.eql(testMiddleware.serviceA);
+      expect(attemptMiddleware.serviceA).to.be.eql(testMiddleware.serviceA);
+      expect(attemptMiddleware.count).equals(attemptConfig.count);
     });
 
     Object.values(ActionHttpMethod).forEach(httpMethod => {
@@ -160,8 +274,8 @@ describe('application', () => {
         expect(serviceA).to.be.instanceOf(ServiceA);
         expect(serviceA).to.be.eql(controller.serviceA);
         expect(serviceB).to.be.instanceOf(ServiceB);
-        expect(() => app.container.get(Request)).to.throw(Error, `Class "Request" doesn't have a registered instance or not expected by container`);
-        expect(() => app.container.get(Response)).to.throw(Error, `Class "Response" doesn't have a registered instance or not expected by container`);
+        expect(() => app.container.get(Request)).to.throw(Error, `Class "Request" does not have a registered instance or not expected by container`);
+        expect(() => app.container.get(Response)).to.throw(Error, `Class "Response" does not have a registered instance or not expected by container`);
         expect(resolvedClasses).to.not.include(Request);
         expect(resolvedClasses).to.not.include(Response);
       });
@@ -181,7 +295,7 @@ describe('application', () => {
     });
 
     it('calling .start() twice should throw an error', () => {
-      return expect(app.start(3000)).to.eventually.rejectedWith(Error, `Can't call .start() twice. Application is already running`);
+      return expect(app.start(3000)).to.eventually.rejectedWith(Error, 'Cannot call .start() twice. Application is already running');
     });
 
     Object.values(ActionHttpMethod).forEach(httpMethod => {

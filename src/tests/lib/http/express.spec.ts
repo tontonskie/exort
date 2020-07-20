@@ -3,7 +3,7 @@ import { Express, Request, Response } from '../../../lib/http/express';
 import { expect, request } from '../../utils';
 
 describe('http/express', () => {
-  describe('ExpressServer', () => {
+  describe('Express', () => {
 
     const server: Express = new Express();
     before(() => {
@@ -32,7 +32,7 @@ describe('http/express', () => {
     });
 
     it('calling .start() twice should throw an error', () => {
-      return expect(server.start(3000)).to.eventually.rejectedWith(Error, `Can't call .start() twice. Http server is already running.`);
+      return expect(server.start(3000)).to.eventually.rejectedWith(Error, 'Cannot call .start() twice. Http server is already running.');
     });
 
     Object.values(ActionHttpMethod).forEach(httpMethod => {

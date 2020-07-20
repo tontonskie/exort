@@ -63,7 +63,7 @@ export class Container {
   get<T = Object>(targetClass: Function): T {
     let instance = this.classes.get(targetClass);
     if (!instance || instance === true) {
-      throw new Error(`Class "${targetClass.name}" doesn't have a registered instance or not expected by container`);
+      throw new Error(`Class "${targetClass.name}" does not have a registered instance or not expected by container`);
     }
     return instance;
   }

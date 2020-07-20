@@ -1,6 +1,7 @@
 import {
   HttpServer, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails, MiddlewareClass, MiddlewareDetails, CallableMiddleware,
-  BaseNextFunction
+  BaseNextFunction,
+  MiddlewareConfig
 } from './server';
 import { getClassMetadata, getParamTypes } from '../metadata';
 import { Container } from '../container';
@@ -30,11 +31,11 @@ export interface Response extends express.Response, BaseResponse {
 
 }
 
-export function Next() {
+export function NextFunction() {
 
 }
 
-export interface Next extends express.NextFunction, BaseNextFunction {
+export interface NextFunction extends express.NextFunction, BaseNextFunction {
 
 }
 
@@ -79,31 +80,47 @@ export class Express extends HttpServer {
     container.set(Express, this);
   }
 
-  useMiddleware(container: Container, middlewareClass: MiddlewareClass) {
+  useMiddleware(container: Container, middlewareClass: MiddlewareClass | MiddlewareConfig) {
+    let config = null;
+    if (middlewareClass instanceof MiddlewareConfig) {
+      config = middlewareClass.config;
+      middlewareClass = middlewareClass.middlewareClass;
+    }
+
     const metadata: MiddlewareDetails = getClassMetadata(middlewareClass, 'middleware');
     if (_.isEmpty(metadata)) {
-      throw new Error(`${middlewareClass.name} doesn't have controller metadata`);
+      throw new Error(`${middlewareClass.name} does not have middleware metadata`);
     }
 
     const middleware: CallableMiddleware = container.resolve(middlewareClass);
-    if (middleware) {
-      this.instance.use(this.callAction.bind(this, middleware, 'handle', null));
+    if (!middleware) {
+      throw new Error(`Cannot resolve ${middlewareClass.name} middleware class`);
     }
+
+    if (typeof middleware.install == 'function') {
+      middleware.install(config);
+    }
+
+    this.instance.use(this.callAction.bind(this, middleware, 'handle', null));
   }
 
   useController(container: Container, controllerClass: Function) {
     const metadata: ControllerDetails = getClassMetadata(controllerClass, 'controller');
     if (_.isEmpty(metadata)) {
-      throw new Error(`${controllerClass.name} doesn't have controller metadata`);
+      throw new Error(`${controllerClass.name} does not have controller metadata`);
     }
 
     const controller = container.resolve(controllerClass);
-    if (controller && !_.isEmpty(metadata.routes)) {
+    if (!controller) {
+      throw new Error(`Cannot resolve ${controllerClass.name} controller class`);
+    }
+
+    if (!_.isEmpty(metadata.routes)) {
 
       const router = express.Router();
       for (let route of metadata.routes) {
         if (typeof controller[route.action] != 'function') {
-          throw new Error(`${controllerClass.name} doesn't have "${route.action}" method`);
+          throw new Error(`${controllerClass.name} does not have "${route.action}" method`);
         }
 
         const routerMethodName = metadata.actions[route.action].method.toLowerCase();
@@ -137,7 +154,7 @@ export class Express extends HttpServer {
           ensuredDependencies[i] = request;
         } else if (dependencies[i] == Response) {
           ensuredDependencies[i] = response;
-        } else if (dependencies[i] == Next) {
+        } else if (dependencies[i] == NextFunction) {
           ensuredDependencies[i] = next;
         } else {
           ensuredDependencies[i] = null;
@@ -157,7 +174,7 @@ export class Express extends HttpServer {
 
   async start(port: number, hostname?: string) {
     if (this.isRunning()) {
-      throw new Error(`Can't call .start() twice. Http server is already running.`);
+      throw new Error('Cannot call .start() twice. Http server is already running.');
     }
 
     const server = http.createServer(this.instance);

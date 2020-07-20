@@ -49,7 +49,7 @@ export abstract class HttpServer {
 
   abstract setContainerBindings(container: Container): void;
   abstract useController(container: Container, controllerClass: Function): void;
-  abstract useMiddleware(container: Container, middlewareClass: MiddlewareClass): void;
+  abstract useMiddleware(container: Container, middlewareClass: MiddlewareClass | MiddlewareConfig): void;
 }
 
 export enum ActionHttpMethod {
@@ -220,11 +220,13 @@ export function Options(path?: string) {
 }
 
 export interface CallableMiddleware {
+  install?(config: Object): void;
   handle(...params: any[]): Promise<void> | void;
 }
 
 export interface MiddlewareClass {
   new(...params: any[]): CallableMiddleware;
+  configure?(config: Object): MiddlewareConfig;
 }
 
 export interface MiddlewareDetails {
@@ -242,4 +244,9 @@ export function Middleware() {
 
     setClassMetadata(target, 'middleware', metadata);
   };
+}
+
+export class MiddlewareConfig<T = Object> {
+
+  constructor(public middlewareClass: MiddlewareClass, public config: T) {}
 }
