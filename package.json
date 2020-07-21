@@ -1,12 +1,11 @@
 {
-  "name": "@exort/server",
+  "name": "@exort/core",
   "version": "0.0.1",
-  "description": "Exort Server Framework",
-  "main": "dist/lib/index.js",
+  "description": "Just another TypeScript framework that supports dependency injection on top of expressjs and TypeORM",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "test": "mocha \"dist/tests/**/*.spec.js\""
+    "test": "mocha \"dist/**/*.spec.js\""
   },
   "author": "tonton.dev001@gmail.com",
   "license": "ISC",

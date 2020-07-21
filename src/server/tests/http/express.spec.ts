@@ -1,8 +1,8 @@
-import { HttpServer, ActionHttpMethod } from '../../../lib';
-import { Express, Request, Response } from '../../../lib/http/express';
-import { expect, request } from '../../utils';
+import { HttpServer, ActionHttpMethod } from '../../../server';
+import { Express, Request, Response } from '../../http/express';
+import { expect, request } from '../../../core/tests/utils';
 
-describe('http/express', () => {
+describe('server/http/express', () => {
   describe('Express', () => {
 
     const server: Express = new Express();

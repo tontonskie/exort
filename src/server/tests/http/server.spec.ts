@@ -1,8 +1,9 @@
-import { Controller, getClassMetadata, ActionHttpMethod, _, Middleware } from '../../../lib';
-import * as httpServer from '../../../lib/http/server';
-import { expect } from  '../../utils';
+import { Controller, ActionHttpMethod, Middleware } from '../../../server';
+import { getClassMetadata, _ } from '../../../core';
+import * as httpServer from '../../../server/http/server';
+import { expect } from '../../../core/tests/utils';
 
-describe('http/server', () => {
+describe('server/http/server', () => {
 
   describe('enum ActionHttpMethod', () => {
     it('should match ["GET", "POST", "HEAD", "DELETE", "PUT", "PATCH", "OPTIONS"]', () => {

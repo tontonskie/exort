@@ -1,7 +1,7 @@
-import { Service, getClassMetadata } from '../../lib';
-import { expect } from  '../utils';
+import { Service, getClassMetadata } from '..';
+import { expect } from  './utils';
 
-describe('service', () => {
+describe('core/service', () => {
   describe('@Service()', () => {
 
     @Service()

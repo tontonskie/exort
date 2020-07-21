@@ -1,6 +1,0 @@
-describe('config', () => {
-
-  describe('Configuration', () => {
-
-  });
-});

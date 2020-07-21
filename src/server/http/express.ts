@@ -3,9 +3,9 @@ import {
   BaseNextFunction,
   MiddlewareConfig
 } from './server';
-import { getClassMetadata, getParamTypes } from '../metadata';
-import { Container } from '../container';
-import { _ } from '../utils';
+import { getClassMetadata, getParamTypes } from '../../core/metadata';
+import { Container } from '../../core/container';
+import { _ } from '../../core/utils';
 import * as express from 'express';
 import * as http from 'http';
 

@@ -1,5 +1,5 @@
-import { KeyValuePair, setClassMetadata, getClassMetadata } from '../metadata';
-import { Container } from '../container';
+import { KeyValuePair, setClassMetadata, getClassMetadata } from '../../core/metadata';
+import { Container } from '../../core/container';
 
 export interface HttpConfig {
   port: number;

@@ -1,9 +1,10 @@
-import { Application, createApplication, Controller, Service, ActionHttpMethod, Middleware, MiddlewareConfig, _ } from '../../lib';
-import { Express, Request, Response, NextFunction } from '../../lib/http/express';
-import * as httpServerModule from '../../lib/http/server';
-import { expect, request } from '../utils';
+import { Application, createApplication, Controller, ActionHttpMethod, Middleware, MiddlewareConfig } from '../../server';
+import { Express, Request, Response, NextFunction } from '../../server/http/express';
+import { Service, _ } from '../../core';
+import * as httpServerModule from '../../server/http/server';
+import { expect, request } from '../../core/tests/utils';
 
-describe('application', () => {
+describe('server/application', () => {
 
   const app = createApplication(Express);
   describe('createApplication()', () => {

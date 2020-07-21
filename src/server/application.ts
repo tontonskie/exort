@@ -1,7 +1,7 @@
 import { HttpServer, HttpServerClass, MiddlewareClass, MiddlewareConfig } from './http/server';
-import { getClassMetadata } from './metadata';
-import { Container } from './container';
-import { _ } from './utils';
+import { getClassMetadata } from '../core/metadata';
+import { Container } from '../core/container';
+import { _ } from '../core/utils';
 
 export class Application {
 
