@@ -19,7 +19,3 @@ export function getClassMetadata(targetClass: Function, key: MetadataKey) {
 export function hasClassMetadata(targetClass: Function, key: MetadataKey) {
   return Reflect.hasMetadata(`${METADATA_PREFIX}${key}`, targetClass);
 }
-
-export function getParamTypes(targetClass: Function, methodName?: string): Function[] {
-  return Reflect.getMetadata('design:paramtypes', targetClass, methodName) || [];
-}

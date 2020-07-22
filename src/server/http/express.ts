@@ -3,7 +3,7 @@ import {
   BaseNextFunction,
   MiddlewareConfig
 } from './server';
-import { getClassMetadata, getParamTypes } from '../../core/metadata';
+import { getClassMetadata } from '../../core/metadata';
 import { Container } from '../../core/container';
 import { _ } from '../../core/utils';
 import * as express from 'express';
@@ -123,13 +123,21 @@ export class Express extends HttpServer {
           throw new Error(`${controllerClass.name} does not have "${route.action}" method`);
         }
 
+        const dependencies = [];
         const routerMethodName = metadata.actions[route.action].method.toLowerCase();
-        const dependencies = getParamTypes(controllerClass.prototype, route.action);
-        for (let i in dependencies) {
-          if (getClassMetadata(dependencies[i], 'classType') == 'controller') {
-            throw new Error(`Cannot use ${dependencies[i].name} as dependency`);
-          } else if (dependencies[i] != Request && dependencies[i] != Response) {
-            dependencies[i] = container.resolve(dependencies[i]);
+        const paramTypes = Reflect.getMetadata('design:paramtypes', controllerClass.prototype, route.action);
+        if (paramTypes) {
+          for (let i in paramTypes) {
+
+            if (getClassMetadata(paramTypes[i], 'classType') == 'controller') {
+              throw new Error(`Cannot use ${paramTypes[i].name} as dependency`);
+            }
+
+            if (paramTypes[i] != Request && paramTypes[i] != Response) {
+              dependencies.push(container.resolve(paramTypes[i]));
+            } else {
+              dependencies.push(paramTypes[i]);
+            }
           }
         }
 

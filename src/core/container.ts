@@ -1,8 +1,8 @@
-import { getParamTypes } from './metadata';
+import { setClassMetadata, hasClassMetadata } from './metadata';
 import { _ } from './utils';
 
-export interface ContainerBinding {
-  (container: Container): Object;
+export interface ContainerBinding<T = Object> {
+  (container: Container): T;
 }
 
 export class Container {
@@ -10,18 +10,18 @@ export class Container {
   private classes = new Map<Function, any>();
   private bindings = new Map<Function, ContainerBinding>();
 
-  waitForInstance(targetClass: Function) {
+  private waitForInstance(targetClass: Function) {
     if (this.classes.has(targetClass)) {
       throw new Error(`Container is already waiting or already have ${targetClass.name} instance`);
     }
     this.classes.set(targetClass, true);
   }
 
-  isWaitingForInstance(targetClass: Function) {
+  private isWaitingForInstance(targetClass: Function) {
     return this.classes.get(targetClass) === true;
   }
 
-  getWaitingClassNames() {
+  private getWaitingClassNames() {
     let waitingClasses: string[] = [];
     this.classes.forEach((instance, waitingClass) => {
       if (instance === true) {
@@ -83,10 +83,13 @@ export class Container {
     const binding = this.bindings.get(targetClass);
     if (!binding) {
 
-      const dependencies: Object[] = [];
-      const paramTypes = getParamTypes(targetClass);
-      if (!_.isEmpty(paramTypes)) {
+      if (!hasClassMetadata(targetClass, 'classType')) {
+        throw new Error(`${targetClass.name} class is not decorated`);
+      }
 
+      const dependencies: Object[] = [];
+      const paramTypes = Reflect.getMetadata('design:paramtypes', targetClass);
+      if (paramTypes) {
         for (let ParamTypeClass of paramTypes) {
           if (typeof ParamTypeClass != 'function') {
             throw new Error(`Invalid parameter type: ${typeof ParamTypeClass}`);
@@ -104,10 +107,16 @@ export class Container {
     return instance;
   }
 
-  bind(targetClass: Function, handler: ContainerBinding) {
+  bind<T>(targetClass: Function, handler: ContainerBinding<T>) {
     if (typeof handler != 'function') {
       throw new Error('Container binding should be a function');
     }
     this.bindings.set(targetClass, handler);
   }
+}
+
+export function Injectable() {
+  return (target: Function) => {
+    setClassMetadata(target, 'classType', 'injectable');
+  };
 }
