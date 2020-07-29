@@ -1,11 +1,8 @@
 import {
   HttpServer, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails, MiddlewareClass, MiddlewareDetails, CallableMiddleware,
-  BaseNextFunction,
-  MiddlewareConfig
+  BaseNextFunction, MiddlewareConfig
 } from './server';
-import { getClassMetadata } from '../../core/metadata';
-import { Container } from '../../core/container';
-import { _ } from '../../core/utils';
+import { getClassMetadata, Container, _ } from '../../core';
 import * as express from 'express';
 import * as http from 'http';
 
@@ -159,17 +156,17 @@ export class Express extends HttpServer {
       if (typeof dependencies[i] == 'function') {
 
         if (dependencies[i] == Request) {
-          ensuredDependencies[i] = request;
+          ensuredDependencies.push(request);
         } else if (dependencies[i] == Response) {
-          ensuredDependencies[i] = response;
+          ensuredDependencies.push(response);
         } else if (dependencies[i] == NextFunction) {
-          ensuredDependencies[i] = next;
+          ensuredDependencies.push(next);
         } else {
-          ensuredDependencies[i] = null;
+          ensuredDependencies.push(null);
         }
 
       } else {
-        ensuredDependencies[i] = dependencies[i];
+        ensuredDependencies.push(dependencies[i]);
       }
     }
 

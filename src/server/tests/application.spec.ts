@@ -1,23 +1,23 @@
-import { Application, createApplication, Controller, ActionHttpMethod, Middleware, MiddlewareConfig } from '../../server';
-import { Express, Request, Response, NextFunction } from '../../server/http/express';
+import { WebApplication, createWebApplication, Controller, ActionHttpMethod, Middleware, MiddlewareConfig } from '..';
+import { Express, Request, Response, NextFunction } from '../http/express';
 import { Service, _ } from '../../core';
-import * as httpServerModule from '../../server/http/server';
+import * as httpServerModule from '../http/server';
 import { expect, request } from '../../core/tests/utils';
 
 describe('server/application', () => {
 
-  const app = createApplication(Express);
-  describe('createApplication()', () => {
-    it(`should return an instance of ${Application.name} class`, () => {
-      expect(app).to.be.instanceOf(Application);
+  const app = createWebApplication(Express);
+  describe('createWebApplication()', () => {
+    it(`should return an instance of ${WebApplication.name} class`, () => {
+      expect(app).to.be.instanceOf(WebApplication);
     });
   });
 
-  describe('Application', () => {
+  describe('WebApplication', () => {
 
     it('should have an initialized factory with self instance resolved', () => {
-      expect(app.container.get(Application)).to.be.instanceOf(Application);
-      expect(app.container.get(Application)).to.be.eql(app);
+      expect(app.container.get(WebApplication)).to.be.instanceOf(WebApplication);
+      expect(app.container.get(WebApplication)).to.be.eql(app);
     });
 
     it(`.getHttpServer() should return an instance of ${Express.name}`, () => {

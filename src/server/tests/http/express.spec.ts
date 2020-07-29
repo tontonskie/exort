@@ -1,4 +1,4 @@
-import { HttpServer, ActionHttpMethod } from '../../../server';
+import { HttpServer, ActionHttpMethod } from '../..';
 import { Express, Request, Response } from '../../http/express';
 import { expect, request } from '../../../core/tests/utils';
 

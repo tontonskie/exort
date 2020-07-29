@@ -1,6 +1,6 @@
-import { Controller, ActionHttpMethod, Middleware } from '../../../server';
+import { Controller, ActionHttpMethod, Middleware } from '../..';
 import { getClassMetadata, _ } from '../../../core';
-import * as httpServer from '../../../server/http/server';
+import * as httpServer from '../../http/server';
 import { expect } from '../../../core/tests/utils';
 
 describe('server/http/server', () => {

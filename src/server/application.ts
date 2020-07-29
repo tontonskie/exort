@@ -1,30 +1,18 @@
 import { HttpServer, HttpServerClass, MiddlewareClass, MiddlewareConfig } from './http/server';
-import { getClassMetadata } from '../core/metadata';
-import { Container } from '../core/container';
-import { _ } from '../core/utils';
+import { Application, getClassMetadata, _ } from '../core';
 
-export class Application {
+export class WebApplication extends Application {
 
-  protected httpServer?: HttpServer;
-
+  private httpServer?: HttpServer;
   private _running: boolean = false;
-  private _container: Container;
 
   constructor() {
-    this._container = new Container();
-    this._container.set(Application, this);
+    super();
+    this._container.set(WebApplication, this);
   }
 
   get running() {
     return this._running;
-  }
-
-  get container() {
-    return this._container;
-  }
-
-  make<T = Object>(targetClass: Function) {
-    return this._container.resolve<T>(targetClass);
   }
 
   setHttpServer(httpServer: HttpServer) {
@@ -96,8 +84,8 @@ export class Application {
   }
 }
 
-export function createApplication(httpServerClass: HttpServerClass) {
-  const application = new Application();
+export function createWebApplication(httpServerClass: HttpServerClass) {
+  const application = new WebApplication();
   application.setHttpServer(new httpServerClass());
   return application;
 }
