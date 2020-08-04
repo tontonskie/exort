@@ -12,24 +12,34 @@ describe('commands/create-project', () => {
       await app.start(['create:project', projectName], { from: 'user' });
     });
 
-    it(`should create folder ${projectName}`, () => {
-      return expect(fs.access(`./${projectName}`)).to.be.eventually.fulfilled;
+    it(`should create folder ${projectName}`, async () => {
+      let promise = fs.stat(`./${projectName}`);
+      await expect(promise).to.be.eventually.fulfilled;
+      expect((await promise).isDirectory()).equals(true);
     });
 
-    it(`should create folder ${projectName}/src`, () => {
-      return expect(fs.access(`./${projectName}/src`)).to.be.eventually.fulfilled;
+    it(`should create folder ${projectName}/src`, async () => {
+      let promise = fs.stat(`./${projectName}/src`);
+      await expect(promise).to.be.eventually.fulfilled;
+      expect((await promise).isDirectory()).equals(true);
     });
 
-    it(`should create folder ${projectName}/src/controllers`, () => {
-      return expect(fs.access(`./${projectName}/src/controllers`)).to.be.eventually.fulfilled;
+    it(`should create folder ${projectName}/src/controllers`, async () => {
+      let promise = fs.stat(`./${projectName}/src/controllers`);
+      await expect(promise).to.be.eventually.fulfilled;
+      expect((await promise).isDirectory()).equals(true);
     });
 
-    it(`should create folder ${projectName}/src/middleware`, () => {
-      return expect(fs.access(`./${projectName}/src/middleware`)).to.be.eventually.fulfilled;
+    it(`should create folder ${projectName}/src/middleware`, async () => {
+      let promise = fs.stat(`./${projectName}/src/middleware`);
+      await expect(promise).to.be.eventually.fulfilled;
+      expect((await promise).isDirectory()).equals(true);
     });
 
-    it(`should create folder ${projectName}/src/services`, () => {
-      return expect(fs.access(`./${projectName}/src/services`)).to.be.eventually.fulfilled;
+    it(`should create folder ${projectName}/src/services`, async () => {
+      let promise = fs.stat(`./${projectName}/src/services`);
+      await expect(promise).to.be.eventually.fulfilled;
+      expect((await promise).isDirectory()).equals(true);
     });
 
     it(`${projectName}/package.json content should match`, async () => {
