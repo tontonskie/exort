@@ -1,39 +1,53 @@
 import { Application, getClassMetadata } from '../core';
+import { ExecutableCommand, Program } from './command';
+import commander = require('commander');
 
 export class CLIApplication extends Application {
 
-  private commands: Function[] = [];
+  private program: Program;
 
   constructor() {
     super();
+    this.program = new Program();
     this._container.set(CLIApplication, this);
   }
 
-  addCommand(commandClass: Function) {
+  use(commandClass: Function) {
     if (getClassMetadata(commandClass, 'classType') != 'command') {
       throw new Error('Should be @Command decorated');
     }
 
-    if (!getClassMetadata(commandClass, 'command')) {
+    const metadata = getClassMetadata(commandClass, 'command');
+    if (!metadata) {
       throw new Error(`${commandClass.name} does not have command metadata`);
     }
 
-    this.commands.push(commandClass);
+    const program = this.program.command(metadata.name)
+    const commandInstance = this.make<ExecutableCommand>(commandClass);
+    if (typeof commandInstance.execute != 'function') {
+      throw new Error(`${commandClass.name} must have an execute method`);
+    }
+
+    if (typeof commandInstance.build == 'function') {
+      commandInstance.build(program);
+    }
+
+    program.action(commandInstance.execute.bind(commandInstance));
   }
 
   getCommands() {
-    return this.commands;
+    return this.program.commands;
   }
 
-  start(commandName: string) {
-
+  async start(argv: string[], options?: commander.ParseOptions) {
+    await this.program.parseAsync(argv, options);
   }
 }
 
 export function createCLIApplication(commandClasses: Function[]) {
   const app = new CLIApplication();
   for (let commandClass of commandClasses) {
-    app.addCommand(commandClass);
+    app.use(commandClass);
   }
   return app;
 }

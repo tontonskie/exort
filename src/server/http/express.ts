@@ -1,7 +1,4 @@
-import {
-  HttpServer, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails, MiddlewareClass, MiddlewareDetails, CallableMiddleware,
-  BaseNextFunction, MiddlewareConfig
-} from './server';
+import { HttpServer, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails, BaseNextFunction, MiddlewareDetails } from './server';
 import { getClassMetadata, Container, _ } from '../../core';
 import * as express from 'express';
 import * as http from 'http';
@@ -77,28 +74,33 @@ export class Express extends HttpServer {
     container.set(Express, this);
   }
 
-  useMiddleware(container: Container, middlewareClass: MiddlewareClass | MiddlewareConfig) {
-    let config = null;
-    if (middlewareClass instanceof MiddlewareConfig) {
-      config = middlewareClass.config;
-      middlewareClass = middlewareClass.middlewareClass;
-    }
-
+  useMiddleware(container: Container, middlewareClass: Function, middleware: Object) {
     const metadata: MiddlewareDetails = getClassMetadata(middlewareClass, 'middleware');
     if (_.isEmpty(metadata)) {
       throw new Error(`${middlewareClass.name} does not have middleware metadata`);
     }
 
-    const middleware: CallableMiddleware = container.resolve(middlewareClass);
-    if (!middleware) {
-      throw new Error(`Cannot resolve ${middlewareClass.name} middleware class`);
-    }
+    if (metadata.handlerMethodName && typeof middleware[metadata.handlerMethodName] == 'function') {
+      const dependencies = [];
+      const paramTypes = Reflect.getMetadata('design:paramtypes', middlewareClass.prototype, metadata.handlerMethodName);
+      if (paramTypes) {
 
-    if (typeof middleware.install == 'function') {
-      middleware.install(config);
-    }
+        for (let i in paramTypes) {
 
-    this.instance.use(this.callAction.bind(this, middleware, 'handle', null));
+          if (['controller', 'middleware'].includes(getClassMetadata(paramTypes[i], 'classType'))) {
+            throw new Error(`Cannot use ${paramTypes[i].name} as dependency`);
+          }
+
+          if (!([Request, Response, Function].includes(paramTypes[i]))) {
+            dependencies.push(container.resolve(paramTypes[i]));
+          } else {
+            dependencies.push(paramTypes[i]);
+          }
+        }
+      }
+
+      this.instance.use(this.callAction.bind(this, middleware, metadata.handlerMethodName, dependencies));
+    }
   }
 
   useController(container: Container, controllerClass: Function) {
@@ -126,11 +128,11 @@ export class Express extends HttpServer {
         if (paramTypes) {
           for (let i in paramTypes) {
 
-            if (getClassMetadata(paramTypes[i], 'classType') == 'controller') {
+            if (['controller', 'middleware'].includes(getClassMetadata(paramTypes[i], 'classType'))) {
               throw new Error(`Cannot use ${paramTypes[i].name} as dependency`);
             }
 
-            if (paramTypes[i] != Request && paramTypes[i] != Response) {
+            if (!([Request, Response, Function].includes(paramTypes[i]))) {
               dependencies.push(container.resolve(paramTypes[i]));
             } else {
               dependencies.push(paramTypes[i]);
@@ -159,7 +161,7 @@ export class Express extends HttpServer {
           ensuredDependencies.push(request);
         } else if (dependencies[i] == Response) {
           ensuredDependencies.push(response);
-        } else if (dependencies[i] == NextFunction) {
+        } else if (dependencies[i] == Function) {
           ensuredDependencies.push(next);
         } else {
           ensuredDependencies.push(null);

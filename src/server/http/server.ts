@@ -48,7 +48,7 @@ export abstract class HttpServer {
 
   abstract setContainerBindings(container: Container): void;
   abstract useController(container: Container, controllerClass: Function): void;
-  abstract useMiddleware(container: Container, middlewareClass: MiddlewareClass | MiddlewareConfig): void;
+  abstract useMiddleware(container: Container, middlewareClass: Function, middleware: Object): void;
 }
 
 export enum ActionHttpMethod {
@@ -77,13 +77,6 @@ export interface ControllerDetails {
   actions?: KeyValuePair<ActionDetails>;
 }
 
-function getDefaultControllerMetadata(controllerClass: Function): ControllerDetails {
-  return {
-    name: controllerClass.name,
-    prefix: '/'
-  };
-}
-
 function applyPathPrefix(path: string) {
   path = path ? path : '/';
   if (!path.startsWith('/')) {
@@ -93,10 +86,7 @@ function applyPathPrefix(path: string) {
 }
 
 function addRouteMetadata(controllerClass: Function, path: string, actionName: string, details: ActionDetails) {
-  let metadata: ControllerDetails = getClassMetadata(controllerClass, 'controller');
-  if (!metadata) {
-    metadata = getDefaultControllerMetadata(controllerClass);
-  }
+  const metadata: ControllerDetails = getClassMetadata(controllerClass, 'controller') || {};
 
   metadata.actions = metadata.actions || {};
   if (metadata.actions[actionName]) {
@@ -116,19 +106,15 @@ function addRouteMetadata(controllerClass: Function, path: string, actionName: s
 export function Controller(prefix?: string) {
   return (target: Function) => {
     setClassMetadata(target, 'classType', 'controller');
-
-    let metadata: ControllerDetails = getClassMetadata(target, 'controller');
-    if (!metadata) {
-      metadata = getDefaultControllerMetadata(target);
-    }
-
+    const metadata: ControllerDetails = getClassMetadata(target, 'controller') || {};
+    metadata.name = target.name;
     metadata.prefix = applyPathPrefix(prefix);
     setClassMetadata(target, 'controller', metadata);
   };
 }
 
 export function Get(path?: string) {
-  return (target: Object , propertyName: string, descriptor: PropertyDescriptor) => {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
     addRouteMetadata(
       target.constructor,
       path,
@@ -141,7 +127,7 @@ export function Get(path?: string) {
 }
 
 export function Post(path?: string) {
-  return (target: Object , propertyName: string, descriptor: PropertyDescriptor) => {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
     addRouteMetadata(
       target.constructor,
       path,
@@ -154,7 +140,7 @@ export function Post(path?: string) {
 }
 
 export function Head(path?: string) {
-  return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
     addRouteMetadata(
       target.constructor,
       path,
@@ -167,7 +153,7 @@ export function Head(path?: string) {
 }
 
 export function Delete(path?: string) {
-  return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
     addRouteMetadata(
       target.constructor,
       path,
@@ -180,7 +166,7 @@ export function Delete(path?: string) {
 }
 
 export function Put(path?: string) {
-  return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
     addRouteMetadata(
       target.constructor,
       path,
@@ -193,7 +179,7 @@ export function Put(path?: string) {
 }
 
 export function Patch(path?: string) {
-  return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
     addRouteMetadata(
       target.constructor,
       path,
@@ -206,7 +192,7 @@ export function Patch(path?: string) {
 }
 
 export function Options(path?: string) {
-  return (target: Function , propertyName: string, descriptor: PropertyDescriptor) => {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
     addRouteMetadata(
       target.constructor,
       path,
@@ -218,34 +204,24 @@ export function Options(path?: string) {
   };
 }
 
-export interface CallableMiddleware {
-  install?(config: Object): void;
-  handle(...params: any[]): Promise<void> | void;
-}
-
-export interface MiddlewareClass {
-  new(...params: any[]): CallableMiddleware;
-  configure?(config: Object): MiddlewareConfig;
-}
-
 export interface MiddlewareDetails {
   name: string;
+  handlerMethodName?: string;
 }
 
 export function Middleware() {
   return (target: Function) => {
     setClassMetadata(target, 'classType', 'middleware');
-
-    let metadata: MiddlewareDetails = getClassMetadata(target, 'middleware');
-    if (!metadata) {
-      metadata = { name: target.name };
-    }
-
+    const metadata: MiddlewareDetails = getClassMetadata(target, 'middleware') || {};
+    metadata.name = target.name;
     setClassMetadata(target, 'middleware', metadata);
   };
 }
 
-export class MiddlewareConfig<T = Object> {
-
-  constructor(public middlewareClass: MiddlewareClass, public config: T) {}
+export function Handler() {
+  return (target: Object, propertyName: string, descriptor: PropertyDescriptor) => {
+    const metadata: MiddlewareDetails = getClassMetadata(target.constructor, 'middleware') || {};
+    metadata.handlerMethodName = propertyName;
+    setClassMetadata(target.constructor, 'middleware', metadata);
+  };
 }

@@ -1,4 +1,4 @@
-import { HttpServer, HttpServerClass, MiddlewareClass, MiddlewareConfig } from './http/server';
+import { HttpServer, HttpServerClass } from './http/server';
 import { Application, getClassMetadata, _ } from '../core';
 
 export class WebApplication extends Application {
@@ -27,43 +27,37 @@ export class WebApplication extends Application {
     return this.httpServer as any;
   }
 
-  addController(controllerClass: Function) {
+  use(decoratedClassOrInstance: any) {
     if (this._running) {
-      throw new Error('Cannot add controller while application is already running');
+      throw new Error('Application is already running');
     }
 
     if (!this.httpServer) {
       throw new Error('HttpServer is not set');
     }
 
-    if (getClassMetadata(controllerClass, 'classType') != 'controller') {
-      throw new Error('Should be @Controller decorated');
-    }
+    if (typeof decoratedClassOrInstance == 'function') {
 
-    this.httpServer.useController(this._container, controllerClass);
-  }
+      const classType = getClassMetadata(decoratedClassOrInstance, 'classType');
+      if (classType == 'controller') {
+        this.httpServer.useController(this._container, decoratedClassOrInstance);
+      } else if (classType == 'middleware') {
+        this.httpServer.useMiddleware(this._container, decoratedClassOrInstance, new decoratedClassOrInstance());
+      } else {
+        throw new Error(`Must be @Controller or @Middleware decorated`);
+      }
 
-  addControllers(controllerClasses: Function[]) {
-    for (let controllerClass of controllerClasses) {
-      this.addController(controllerClass);
-    }
-  }
+    } else if (typeof decoratedClassOrInstance == 'object') {
 
-  addMiddleware(middlewareClasses: MiddlewareClass | MiddlewareConfig | (MiddlewareConfig | MiddlewareClass)[]) {
-    if (this._running) {
-      throw new Error('Cannot add middleware while application is already running');
-    }
+      const objectClass = Object.getPrototypeOf(decoratedClassOrInstance).constructor;
+      if (getClassMetadata(objectClass, 'classType') == 'middleware') {
+        this.httpServer.useMiddleware(this._container, objectClass, decoratedClassOrInstance);
+      } else {
+        throw new Error(`${objectClass.name} class must be @Middleware decorated`);
+      }
 
-    if (!this.httpServer) {
-      throw new Error('HttpServer is not set');
-    }
-
-    if (!Array.isArray(middlewareClasses)) {
-      middlewareClasses = [middlewareClasses];
-    }
-
-    for (let middlewareClass of middlewareClasses) {
-      this.httpServer.useMiddleware(this._container, middlewareClass);
+    } else {
+      throw new Error(`Application.use() do not accept ${typeof decoratedClassOrInstance}`);
     }
   }
 

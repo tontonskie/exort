@@ -15,4 +15,6 @@ export abstract class Application {
   make<T = Object>(targetClass: Function) {
     return this._container.resolve<T>(targetClass);
   }
+
+  abstract use(decoratedClassOrInstance: any): void;
 }

@@ -1,4 +1,4 @@
-import { WebApplication, createWebApplication, Controller, ActionHttpMethod, Middleware, MiddlewareConfig } from '..';
+import { WebApplication, createWebApplication, Controller, ActionHttpMethod, Middleware, Handler } from '..';
 import { Express, Request, Response, NextFunction } from '../http/express';
 import { Service, _ } from '../../core';
 import * as httpServerModule from '../http/server';
@@ -84,7 +84,7 @@ describe('server/application', () => {
       expect(() => app.make(TestController)).to.throw(Error, 'Circular dependency TestController -> SecondService -> SecondService');
     });
 
-    it('.addMiddleware() should resolve middleware and dependencies but not Request and Response class', () => {
+    it('.use() should resolve middleware handler dependencies but not Request, Response class and next function', () => {
 
       @Service()
       class ServiceA {
@@ -94,144 +94,93 @@ describe('server/application', () => {
       @Middleware()
       class TestMiddleware {
 
-        constructor(public serviceA: ServiceA) {}
-
-        handle(request: Request, response: Response, next: NextFunction) {
+        @Handler()
+        handle(request: Request, response: Response, next: NextFunction, serviceA: ServiceA) {
           next();
         }
       }
 
-      app.addMiddleware(TestMiddleware);
-      const middleware = app.container.get<TestMiddleware>(TestMiddleware);
-      const serviceA = app.container.get<ServiceA>(ServiceA);
+      app.use(TestMiddleware);
       const resolvedClasses = app.container.getResolvedClasses();
-      expect(middleware).to.be.instanceOf(TestMiddleware);
-      expect(resolvedClasses).to.include(TestMiddleware);
       expect(resolvedClasses).to.include(ServiceA);
-      expect(middleware.serviceA).to.be.instanceOf(ServiceA);
-      expect(serviceA).to.be.instanceOf(ServiceA);
-      expect(serviceA).to.be.eql(middleware.serviceA);
+      expect(resolvedClasses).to.not.include(Request);
+      expect(resolvedClasses).to.not.include(Response);
+      expect(resolvedClasses).to.not.include(Function);
+      expect(app.container.get(ServiceA)).to.be.instanceOf(ServiceA);
     });
 
-    it('.addMiddleware() with MiddlewareConfig should trigger .install() with config not null', () => {
+    it('.use() with middleware instance', () => {
 
       @Service()
       class ServiceA {
 
       }
-
-      interface TestMiddlewareConfig {
-        count: number;
-      }
-
-      const config = {
-        count: 1
-      };
 
       @Middleware()
       class TestMiddleware {
 
-        public count: number = 0;
-
-        constructor(public serviceA: ServiceA) {}
-
-        install(config: TestMiddlewareConfig) {
-          this.count = config.count;
-        }
-
-        handle(request: Request, response: Response, next: NextFunction) {
+        @Handler()
+        handle(request: Request, response: Response, next: NextFunction, service: ServiceA) {
           next();
-        }
-
-        static configure(config: TestMiddlewareConfig) {
-          return new MiddlewareConfig(this, config);
         }
       }
 
-      app.addMiddleware(TestMiddleware.configure(config));
-      const middleware = app.container.get<TestMiddleware>(TestMiddleware);
-      const serviceA = app.container.get<ServiceA>(ServiceA);
+      app.use(new TestMiddleware());
       const resolvedClasses = app.container.getResolvedClasses();
-      expect(middleware).to.be.instanceOf(TestMiddleware);
-      expect(resolvedClasses).to.include(TestMiddleware);
       expect(resolvedClasses).to.include(ServiceA);
-      expect(middleware.serviceA).to.be.instanceOf(ServiceA);
-      expect(serviceA).to.be.instanceOf(ServiceA);
-      expect(serviceA).to.be.eql(middleware.serviceA);
-      expect(middleware.count).equals(config.count);
+      expect(resolvedClasses).to.not.include(Request);
+      expect(resolvedClasses).to.not.include(Response);
+      expect(resolvedClasses).to.not.include(Function);
+      expect(app.container.get(ServiceA)).to.be.instanceOf(ServiceA);
     });
 
-    it('.addMiddleware() with array of MiddlewareClass | MiddlewareConfig should trigger .install()', () => {
+    it('.use() with middleware class and instance', () => {
 
       @Service()
       class ServiceA {
 
       }
 
-      interface AttemptMiddlewareConfig {
-        count: number;
-      }
+      @Service()
+      class ServiceB {
 
-      const attemptConfig = {
-        count: 1
-      };
+      }
 
       @Middleware()
       class AttemptMiddleware {
 
-        public count: number = 0;
-
-        constructor(public serviceA: ServiceA) {}
-
-        install(config: AttemptMiddlewareConfig) {
-          this.count = config.count;
-        }
-
-        handle(request: Request, response: Response, next: NextFunction) {
+        @Handler()
+        handle(request: Request, response: Response, next: NextFunction, serviceA: ServiceA) {
           next();
-        }
-
-        static configure(config: AttemptMiddlewareConfig) {
-          return new MiddlewareConfig(this, config);
         }
       }
 
       @Middleware()
       class TestMiddleware {
 
-        constructor(public serviceA: ServiceA) {}
-
-        handle(request: Request, response: Response, next: NextFunction) {
+        @Handler()
+        handle(request: Request, response: Response, next: NextFunction, serviceB: ServiceB) {
           next();
         }
       }
 
-      app.addMiddleware([
-        AttemptMiddleware.configure(attemptConfig),
-        TestMiddleware
-      ]);
-      const attemptMiddleware = app.container.get<AttemptMiddleware>(AttemptMiddleware);
-      const testMiddleware = app.container.get<TestMiddleware>(TestMiddleware);
-      const serviceA = app.container.get<ServiceA>(ServiceA);
+      app.use(new AttemptMiddleware());
+      app.use(TestMiddleware);
       const resolvedClasses = app.container.getResolvedClasses();
-      expect(attemptMiddleware).to.be.instanceOf(AttemptMiddleware);
-      expect(testMiddleware).to.be.instanceOf(TestMiddleware);
-      expect(resolvedClasses).to.include(AttemptMiddleware);
-      expect(resolvedClasses).to.include(TestMiddleware);
       expect(resolvedClasses).to.include(ServiceA);
-      expect(attemptMiddleware.serviceA).to.be.instanceOf(ServiceA);
-      expect(testMiddleware.serviceA).to.be.instanceOf(ServiceA);
-      expect(serviceA).to.be.eql(attemptMiddleware.serviceA);
-      expect(serviceA).to.be.eql(testMiddleware.serviceA);
-      expect(attemptMiddleware.serviceA).to.be.eql(testMiddleware.serviceA);
-      expect(attemptMiddleware.count).equals(attemptConfig.count);
+      expect(resolvedClasses).to.include(ServiceB);
+      expect(resolvedClasses).to.not.include(Request);
+      expect(resolvedClasses).to.not.include(Response);
+      expect(resolvedClasses).to.not.include(Function);
+      expect(app.container.get(ServiceA)).to.be.instanceOf(ServiceA);
+      expect(app.container.get(ServiceB)).to.be.instanceOf(ServiceB);
     });
 
     Object.values(ActionHttpMethod).forEach(httpMethod => {
       const decoratorName = _.capitalize(httpMethod);
       const HttpMethodDecorator: Function = httpServerModule[decoratorName];
       const methodName = httpMethod.toLowerCase();
-      it(`.addController() with @${decoratorName}() should resolve controller and dependencies but not Request and Response class`, () => {
+      it(`.use() with @${decoratorName}() should resolve controller and dependencies but not Request and Response class`, () => {
 
         @Service()
         class ServiceA {
@@ -262,7 +211,7 @@ describe('server/application', () => {
           }
         }
 
-        app.addController(TestController);
+        app.use(TestController);
         const controller = app.container.get<TestController>(TestController);
         const serviceA = app.container.get<ServiceA>(ServiceA);
         const serviceB = app.container.get<ServiceB>(ServiceB);

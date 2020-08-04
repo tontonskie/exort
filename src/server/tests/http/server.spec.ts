@@ -1,4 +1,4 @@
-import { Controller, ActionHttpMethod, Middleware } from '../..';
+import { Controller, ActionHttpMethod, Middleware, Handler } from '../..';
 import { getClassMetadata, _ } from '../../../core';
 import * as httpServer from '../../http/server';
 import { expect } from '../../../core/tests/utils';
@@ -221,6 +221,29 @@ describe('server/http/server', () => {
 
     it('metadata middleware should match', () => {
       expect(getClassMetadata(TestMiddleware, 'middleware')).to.be.eql({ name: TestMiddleware.name });
+    });
+  });
+
+  describe('@Handler()', () => {
+
+    @Middleware()
+    class TestMiddleware {
+
+      @Handler()
+      handle() {
+
+      }
+    }
+
+    it('metadata classType should be "middleware"', () => {
+      expect(getClassMetadata(TestMiddleware, 'classType')).equals('middleware');
+    });
+
+    it('metadata middleware should match', () => {
+      expect(getClassMetadata(TestMiddleware, 'middleware')).to.be.eql({
+        name: TestMiddleware.name,
+        handlerMethodName: 'handle'
+      });
     });
   });
 });
