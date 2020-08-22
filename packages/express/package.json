@@ -1,0 +1,23 @@
+{
+  "name": "@exort/express",
+  "version": "0.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "yarn clean && tsc",
+    "build:watch": "yarn clean && tsc --watch"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "reflect-metadata": "^0.1.13",
+    "tslib": "^2.0.1"
+  },
+  "devDependencies": {
+    "@exort/core": "^0.0.0",
+    "@exort/http": "^0.0.0",
+    "@types/express": "^4.17.7"
+  }
+}

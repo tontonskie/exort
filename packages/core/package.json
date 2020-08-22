@@ -1,0 +1,21 @@
+{
+  "name": "@exort/core",
+  "version": "0.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "yarn clean && tsc",
+    "build:watch": "yarn clean && tsc --watch"
+  },
+  "author": "tonton.dev001@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.20",
+    "reflect-metadata": "^0.1.13",
+    "tslib": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.159"
+  }
+}
