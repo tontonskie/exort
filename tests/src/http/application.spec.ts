@@ -177,6 +177,42 @@ describe('htttp/application', () => {
       expect(app.container.get(ServiceB)).to.be.instanceOf(ServiceB);
     });
 
+    it('.use() with 3rd party middleware class that uses base request and response', () => {
+
+      @Provider()
+      class ThirdPartyProvider {
+
+        @Middleware()
+        handle(request: httpModule.Request, response: httpModule.Response, next: httpModule.NextFunction) {
+          next();
+        }
+      }
+
+      app.use(ThirdPartyProvider);
+      const resolvedClasses = app.container.getResolvedClasses();
+      expect(resolvedClasses).to.not.include(httpModule.Request);
+      expect(resolvedClasses).to.not.include(httpModule.Response);
+      expect(resolvedClasses).to.not.include(Function);
+    });
+
+    it('.use() with 3rd party middleware instance that uses base request and response', () => {
+
+      @Provider()
+      class ThirdPartyProvider {
+
+        @Middleware()
+        handle(request: httpModule.Request, response: httpModule.Response, next: httpModule.NextFunction) {
+          next();
+        }
+      }
+
+      app.use(new ThirdPartyProvider());
+      const resolvedClasses = app.container.getResolvedClasses();
+      expect(resolvedClasses).to.not.include(httpModule.Request);
+      expect(resolvedClasses).to.not.include(httpModule.Response);
+      expect(resolvedClasses).to.not.include(Function);
+    });
+
     Object.values(ActionHttpMethod).forEach(httpMethod => {
       const decoratorName = _.capitalize(httpMethod);
       const HttpMethodDecorator: Function = httpModule[decoratorName];
@@ -230,6 +266,71 @@ describe('htttp/application', () => {
         expect(resolvedClasses).to.not.include(Request);
         expect(resolvedClasses).to.not.include(Response);
       });
+
+      it(`.use() with @${decoratorName}() should resolve controller and dependencies but not Request, Response and the middleware attached`, () => {
+
+        @Service()
+        class ServiceA {
+
+          getName() {
+            return 'ServiceA';
+          }
+        }
+
+        @Service()
+        class ServiceB {
+
+          getName() {
+            return 'ServiceB';
+          }
+        }
+
+        @Provider()
+        class TestMiddleware {
+
+          @Middleware()
+          handle(request: Request, response: Response, next: NextFunction) {
+            // TODO: Request context in the base request
+            (request as any).test = 'test';
+            next();
+          }
+        }
+
+        @Controller()
+        class TestController {
+
+          constructor(public serviceA: ServiceA) {}
+
+          @HttpMethodDecorator(`${methodName}/with-middleware`)
+          testMethod(request: Request, serviceA: ServiceA, serviceB: ServiceB, response: Response) {
+            response.send(
+              `${request.method} "/${methodName}/with-middleware" w/ prop dep ${this.serviceA.getName()}, ` +
+              `method dep ${serviceA.getName()} and ${serviceB.getName()}, and with request.test = ${(request as any).test}`
+            );
+          }
+        }
+
+        app.use(TestMiddleware);
+        app.use(TestController);
+        const controller = app.container.get<TestController>(TestController);
+        const serviceA = app.container.get<ServiceA>(ServiceA);
+        const serviceB = app.container.get<ServiceB>(ServiceB);
+        const resolvedClasses = app.container.getResolvedClasses();
+        expect(resolvedClasses).to.include(TestController);
+        expect(resolvedClasses).to.include(ServiceA);
+        expect(resolvedClasses).to.include(ServiceB);
+        expect(controller).to.be.instanceOf(TestController);
+        expect(controller.serviceA).to.be.instanceOf(ServiceA);
+        expect(serviceA).to.be.instanceOf(ServiceA);
+        expect(serviceA).to.be.eql(controller.serviceA);
+        expect(serviceB).to.be.instanceOf(ServiceB);
+        expect(() => app.container.get(Request)).to.throw(Error, `Class "Request" does not have a registered instance or not expected by container`);
+        expect(() => app.container.get(Response)).to.throw(Error, `Class "Response" does not have a registered instance or not expected by container`);
+        expect(() => app.container.get(TestMiddleware)).to.throw(Error, `Class "TestMiddleware" does not have a registered instance or not expected by container`);
+        expect(resolvedClasses).to.not.include(Request);
+        expect(resolvedClasses).to.not.include(Response);
+        expect(resolvedClasses).to.not.include(TestMiddleware);
+      });
     });
 
     it('.running should be false before calling .start()', () => {
@@ -263,6 +364,26 @@ describe('htttp/application', () => {
               expect(res.text).equals('');
             } else {
               expect(res.text).to.be.eql(`${httpMethod} "/${methodName}" w/ prop dep ServiceA, method dep ServiceA and ServiceB`);
+            }
+
+            done();
+          });
+      });
+
+      it(`${httpMethod} method on route "/${methodName}/with-middleware" should match text and status code`, done => {
+
+        request(app.getHttpServer().getInstance())
+          [methodName](`/${methodName}/with-middleware`)
+          .end((err: any, res: ChaiHttp.Response) => {
+
+            expect(res).to.have.status(200);
+
+            if (httpMethod == ActionHttpMethod.HEAD) {
+              expect(res.text).equals('');
+            } else {
+              expect(res.text).to.be.eql(
+                `${httpMethod} "/${methodName}/with-middleware" w/ prop dep ServiceA, method dep ServiceA and ServiceB, and with request.test = test`
+              );
             }
 
             done();

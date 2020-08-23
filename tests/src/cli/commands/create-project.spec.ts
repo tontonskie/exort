@@ -49,8 +49,9 @@ describe('commands/create-project', () => {
         version: '0.0.1',
         description: '',
         scripts: {
-          build: 'exort build src/**/*.ts',
-          'build:watch': 'exort build src/**/*.ts --watch'
+          clean: 'rm -rf dist',
+          build: 'tsc',
+          'build:watch': 'tsc --watch'
         },
         dependencies: {
           '@exort/core': '0.0.1',

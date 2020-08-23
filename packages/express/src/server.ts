@@ -1,4 +1,6 @@
-import { HttpServer, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails, BaseNextFunction } from '@exort/http';
+import {
+  HttpServer, BaseRequestHandler, Request as BaseRequest, Response as BaseResponse, ControllerDetails, NextFunction as BaseNextFunction
+} from '@exort/http';
 import { getClassMetadata, Container, _, ProviderDetails } from '@exort/core';
 import express from 'express';
 import * as http from 'http';
@@ -8,7 +10,7 @@ export interface RequestHandler extends express.RequestHandler, BaseRequestHandl
 }
 
 // Just a proxy class
-export abstract class Request {
+export abstract class Request extends BaseRequest {
 
 }
 
@@ -17,7 +19,7 @@ export interface Request extends express.Request, BaseRequest {
 }
 
 // Just a proxy class
-export abstract class Response {
+export abstract class Response extends BaseResponse {
 
 }
 
@@ -32,6 +34,19 @@ export function NextFunction() {
 export interface NextFunction extends express.NextFunction, BaseNextFunction {
 
 }
+
+const CONTEXT_UNRESOLVABLE_CLASS_TYPES = [
+  'controller',
+  'provider'
+];
+
+const CONTEXT_DEPENDENCIES = [
+  BaseRequest,
+  Request,
+  BaseResponse,
+  Response,
+  Function
+];
 
 export class Express extends HttpServer {
 
@@ -90,11 +105,11 @@ export class Express extends HttpServer {
 
       for (let i in paramTypes) {
 
-        if (['controller', 'provider'].includes(getClassMetadata(paramTypes[i], 'classType'))) {
+        if (CONTEXT_UNRESOLVABLE_CLASS_TYPES.includes(getClassMetadata(paramTypes[i], 'classType'))) {
           throw new Error(`Cannot use ${paramTypes[i].name} as dependency`);
         }
 
-        if (!([Request, Response, Function].includes(paramTypes[i]))) {
+        if (!(CONTEXT_DEPENDENCIES.includes(paramTypes[i]))) {
           dependencies.push(container.resolve(paramTypes[i]));
         } else {
           dependencies.push(paramTypes[i]);
@@ -130,11 +145,11 @@ export class Express extends HttpServer {
         if (paramTypes) {
           for (let i in paramTypes) {
 
-            if (['controller', 'provider'].includes(getClassMetadata(paramTypes[i], 'classType'))) {
+            if (CONTEXT_UNRESOLVABLE_CLASS_TYPES.includes(getClassMetadata(paramTypes[i], 'classType'))) {
               throw new Error(`Cannot use ${paramTypes[i].name} as dependency`);
             }
 
-            if (!([Request, Response, Function].includes(paramTypes[i]))) {
+            if (!(CONTEXT_DEPENDENCIES.includes(paramTypes[i]))) {
               dependencies.push(container.resolve(paramTypes[i]));
             } else {
               dependencies.push(paramTypes[i]);
@@ -159,9 +174,9 @@ export class Express extends HttpServer {
     for (let i in dependencies) {
       if (typeof dependencies[i] == 'function') {
 
-        if (dependencies[i] == Request) {
+        if (dependencies[i] == Request || dependencies[i] == BaseRequest) {
           ensuredDependencies.push(request);
-        } else if (dependencies[i] == Response) {
+        } else if (dependencies[i] == Response || dependencies[i] == BaseResponse) {
           ensuredDependencies.push(response);
         } else if (dependencies[i] == Function) {
           ensuredDependencies.push(next);

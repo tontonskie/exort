@@ -5,20 +5,24 @@ export interface HttpConfig {
   hostname: string;
 }
 
-export interface BaseRequest {
+export abstract class Request {
 
 }
 
-export interface BaseResponse {
+export abstract class Response {
 
 }
 
-export interface BaseNextFunction {
+export function NextFunction(err?: any) {
+
+}
+
+export interface NextFunction {
   (err?: any): void;
 }
 
 export interface BaseRequestHandler {
-  (request: BaseRequest, response: BaseResponse, next: BaseNextFunction): void;
+  (request: Request, response: Response, next: NextFunction): void;
 }
 
 export interface HttpServerClass {

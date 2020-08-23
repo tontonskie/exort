@@ -11,7 +11,7 @@
     "**/*.sublime-workspace": true,
     "**/*.pyc": true,
     "**/dist": true,
-    "node_modules": true,
+    "**/node_modules": true,
     "cli": true,
     "start": true,
     ".venv": true,
