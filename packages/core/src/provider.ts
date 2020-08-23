@@ -10,6 +10,11 @@ export interface ProviderObject {
   install?(app: Application): Promise<void> | void;
 }
 
+export interface ProviderMap {
+  providerClass: Function;
+  providerObject: ProviderObject;
+}
+
 export function Provider() {
   return (target: Function) => {
     setClassMetadata(target, 'classType', 'provider');

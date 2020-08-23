@@ -1,5 +1,5 @@
 import { HttpServer, HttpServerClass } from './server';
-import { Application, getClassMetadata, _ } from '@exort/core';
+import { Application, getClassMetadata, _, ProviderObject, ProviderDetails } from '@exort/core';
 
 export class WebApplication extends Application {
 
@@ -27,6 +27,13 @@ export class WebApplication extends Application {
     return this.httpServer as any;
   }
 
+  protected addProvider(providerClass: Function, providerObject: ProviderObject) {
+    if ((getClassMetadata(providerClass, 'provider') as ProviderDetails).middlewareMethodName) {
+      this.httpServer.useMiddleware(this._container, providerClass, providerObject);
+    }
+    this.providers.push({ providerClass, providerObject });
+  }
+
   use(decoratedClassOrInstance: any) {
     if (this._running) {
       throw new Error('Application is already running');
@@ -40,15 +47,9 @@ export class WebApplication extends Application {
 
       const classType = getClassMetadata(decoratedClassOrInstance, 'classType');
       if (classType == 'controller') {
-
         this.httpServer.useController(this._container, decoratedClassOrInstance);
-
       } else if (classType == 'provider') {
-
-        const instance = new decoratedClassOrInstance();
-        this.providers.push(instance);
-        this.httpServer.useMiddleware(this._container, decoratedClassOrInstance, instance);
-
+        this.addProvider(decoratedClassOrInstance, new decoratedClassOrInstance());
       } else {
         throw new Error(`Must be @Controller or @Middleware decorated`);
       }
@@ -57,10 +58,7 @@ export class WebApplication extends Application {
 
       const objectClass = Object.getPrototypeOf(decoratedClassOrInstance).constructor;
       if (getClassMetadata(objectClass, 'classType') == 'provider') {
-
-        this.providers.push(decoratedClassOrInstance);
-        this.httpServer.useMiddleware(this._container, objectClass, decoratedClassOrInstance);
-
+        this.addProvider(objectClass, decoratedClassOrInstance);
       } else {
         throw new Error(`${objectClass.name} class must be @Middleware decorated`);
       }

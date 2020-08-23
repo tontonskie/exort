@@ -1,10 +1,10 @@
 import { Container } from './container';
-import { ProviderObject } from './provider';
+import { ProviderObject, ProviderMap } from './provider';
 
 export abstract class Application {
 
   protected _container: Container;
-  protected providers: ProviderObject[] = [];
+  protected providers: ProviderMap[] = [];
 
   constructor() {
     this._container = new Container();
@@ -19,9 +19,9 @@ export abstract class Application {
   }
 
   protected async prepare() {
-    for (let provider of this.providers) {
-      if (typeof provider.install == 'function') {
-        let result = provider.install(this);
+    for (let providerMap of this.providers) {
+      if (typeof providerMap.providerObject.install == 'function') {
+        let result = providerMap.providerObject.install(this);
         if (result instanceof Promise) {
           await result;
         }
@@ -30,4 +30,5 @@ export abstract class Application {
   }
 
   abstract use(decoratedClassOrInstance: any): void;
+  protected abstract addProvider(providerClass: Function, providerObject: ProviderObject): void;
 }

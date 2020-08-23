@@ -1,4 +1,4 @@
-import { Application, getClassMetadata } from '@exort/core';
+import { Application, getClassMetadata, ProviderObject } from '@exort/core';
 import { ExecutableCommand, Program } from './command';
 import commander = require('commander');
 
@@ -10,6 +10,10 @@ export class CLIApplication extends Application {
     super();
     this.program = new Program();
     this._container.set(CLIApplication, this);
+  }
+
+  protected addProvider(providerClass: Function, providerObject: ProviderObject) {
+    this.providers.push({ providerClass, providerObject });
   }
 
   use(commandClass: Function) {

@@ -80,27 +80,29 @@ export class Express extends HttpServer {
       throw new Error(`${middlewareClass.name} does not have provider metadata`);
     }
 
-    if (metadata.middlewareMethodName && typeof middleware[metadata.middlewareMethodName] == 'function') {
-      const dependencies = [];
-      const paramTypes = Reflect.getMetadata('design:paramtypes', middlewareClass.prototype, metadata.middlewareMethodName);
-      if (paramTypes) {
+    if (!metadata.middlewareMethodName || typeof middleware[metadata.middlewareMethodName] != 'function') {
+      throw new Error(`${middlewareClass.name} does not have valid middleware`);
+    }
 
-        for (let i in paramTypes) {
+    const dependencies = [];
+    const paramTypes = Reflect.getMetadata('design:paramtypes', middlewareClass.prototype, metadata.middlewareMethodName);
+    if (paramTypes) {
 
-          if (['controller', 'provider'].includes(getClassMetadata(paramTypes[i], 'classType'))) {
-            throw new Error(`Cannot use ${paramTypes[i].name} as dependency`);
-          }
+      for (let i in paramTypes) {
 
-          if (!([Request, Response, Function].includes(paramTypes[i]))) {
-            dependencies.push(container.resolve(paramTypes[i]));
-          } else {
-            dependencies.push(paramTypes[i]);
-          }
+        if (['controller', 'provider'].includes(getClassMetadata(paramTypes[i], 'classType'))) {
+          throw new Error(`Cannot use ${paramTypes[i].name} as dependency`);
+        }
+
+        if (!([Request, Response, Function].includes(paramTypes[i]))) {
+          dependencies.push(container.resolve(paramTypes[i]));
+        } else {
+          dependencies.push(paramTypes[i]);
         }
       }
-
-      this.instance.use(this.callAction.bind(this, middleware, metadata.middlewareMethodName, dependencies));
     }
+
+    this.instance.use(this.callAction.bind(this, middleware, metadata.middlewareMethodName, dependencies));
   }
 
   useController(container: Container, controllerClass: Function) {

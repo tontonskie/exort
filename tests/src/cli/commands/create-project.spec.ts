@@ -96,8 +96,8 @@ describe('commands/create-project', () => {
     it(`${projectName}/src/controllers/home.ts content should match`, async () => {
       let content = await fs.readFile(`./${projectName}/src/controllers/home.ts`, 'utf8');
       expect(content).to.be.eql([
-        "import { Controller, Get } from 'exort/server';\n",
-        "import { Request, Response } from 'exort/server/http/express';\n",
+        "import { Controller, Get } from 'exort/http';\n",
+        "import { Request, Response } from 'exort/express';\n",
         '\n',
         '@Controller()\n',
         'export class HomeController {\n',
@@ -113,8 +113,8 @@ describe('commands/create-project', () => {
     it(`${projectName}/src/app.ts content should match`, async () => {
       let content = await fs.readFile(`./${projectName}/src/app.ts`, 'utf8');
       expect(content).to.be.eql([
-        "import { createWebApplication } from 'exort/server';\n",
-        "import { Express } from 'exort/server/http/express';\n",
+        "import { createWebApplication } from 'exort/http';\n",
+        "import { Express } from 'exort/express';\n",
         "import { HomeController } from './controllers/home';\n",
         '\n',
         'const app = createWebApplication(Express);\n',
