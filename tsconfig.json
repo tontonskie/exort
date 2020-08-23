@@ -11,6 +11,7 @@
     "noLib": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "esModuleInterop": true,
     "target": "es2017",
     "sourceMap": true,
     "allowJs": false,

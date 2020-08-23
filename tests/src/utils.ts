@@ -1,6 +1,6 @@
 import { expect, use, request } from 'chai';
-import chaiHttp = require('chai-http');
-import chaiPromised = require('chai-as-promised');
+import chaiHttp from 'chai-http';
+import chaiPromised from 'chai-as-promised';
 
 use(chaiHttp);
 use(chaiPromised);

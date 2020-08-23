@@ -1,6 +1,6 @@
 import { HttpServer, BaseRequestHandler, BaseRequest, BaseResponse, ControllerDetails, BaseNextFunction } from '@exort/http';
 import { getClassMetadata, Container, _, ProviderDetails } from '@exort/core';
-import * as express from 'express';
+import express from 'express';
 import * as http from 'http';
 
 export interface RequestHandler extends express.RequestHandler, BaseRequestHandler {

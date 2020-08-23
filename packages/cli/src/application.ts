@@ -1,6 +1,6 @@
 import { Application, getClassMetadata, ProviderObject } from '@exort/core';
 import { ExecutableCommand, Program } from './command';
-import commander = require('commander');
+import commander from 'commander';
 
 export class CLIApplication extends Application {
 

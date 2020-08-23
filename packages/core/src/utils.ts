@@ -1,4 +1,4 @@
-import * as lodash from 'lodash';
+import lodash from 'lodash';
 
 export interface Utilities extends lodash.LoDashStatic {
 
