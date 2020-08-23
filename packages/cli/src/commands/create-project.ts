@@ -21,10 +21,12 @@ export class CreateProjectCommand {
         'build:watch': 'exort build src/**/*.ts --watch'
       },
       dependencies: {
-        exort: '0.0.1'
+        '@exort/core': '0.0.1',
+        '@exort/express': '0.0.1',
+        '@exort/http': '0.0.1'
       },
       devDependencies: {
-        typescript: '^3.9.5'
+        typescript: '^4.0.2'
       }
     };
     await fs.writeFile(`${dir}/package.json`, `${JSON.stringify(packageJsonContent, null, 2)}\n`);
@@ -62,8 +64,8 @@ export class CreateProjectCommand {
     await fs.writeFile(
       `${dir}/src/controllers/home.ts`,
       [
-        "import { Controller, Get } from 'exort/http';\n",
-        "import { Request, Response } from 'exort/express';\n",
+        "import { Controller, Get } from '@exort/http';\n",
+        "import { Request, Response } from '@exort/express';\n",
         '\n',
         '@Controller()\n',
         'export class HomeController {\n',
@@ -79,8 +81,8 @@ export class CreateProjectCommand {
     await fs.writeFile(
       `${dir}/src/app.ts`,
       [
-        "import { createWebApplication } from 'exort/http';\n",
-        "import { Express } from 'exort/express';\n",
+        "import { createWebApplication } from '@exort/http';\n",
+        "import { Express } from '@exort/express';\n",
         "import { HomeController } from './controllers/home';\n",
         '\n',
         'const app = createWebApplication(Express);\n',
